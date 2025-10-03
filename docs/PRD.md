@@ -1,49 +1,72 @@
-# PRD — Algorithm Learning Game
+# Product Requirements Document (PRD)
 
-## 1. 배경/문제 정의
-- 어린이가 **알고리즘 개념**(순차, 최단경로, 가중치, 휴리스틱)을 놀이로 익히기 어렵다.
-- 목표: **길 찾기 게임**을 통해 BFS/Dijkstra/A*의 차이를 **눈으로 보며** 이해하도록 돕는 웹 앱.
+**Product:** Algorithm Learning Game — Pathfinding Playground for Kids
+**Authors:** Product & Curriculum Guild
+**Last Updated:** 2025-08-28
 
-## 2. 대상 사용자
-- **학생(유·초등)**: 스스로 맵을 그려 보고 규칙을 바꿔 실험.
-- **교사/학부모**: 수업/가정에서 활동지 대체, 시연 도구.
+---
 
-## 3. 목표(성공지표)
-- 세션당 평균 **2개 이상**의 규칙 변화 실험(대각선/가중치/알고리즘).
-- 1회 세션 내 **경로 유무 판단** 및 **차이 이유 설명** 툴팁 읽기 빈도 증가.
-- 교사 NPS(간단 설문) **+40 이상** (베타 기준).
+## 1. Vision & Goals
+- Empower learners aged 8–12 to experiment with pathfinding algorithms through playful, visual simulations.
+- Support teachers with ready-to-run lesson plans, printable worksheets, and metrics that demonstrate understanding.
+- Offer a scaffolded sandbox where learners can tinker safely without breaking the experience.
 
-## 4. 핵심 기능(우선순위)
-### MVP
-- (필수) 그리드 편집: 시작/목표/벽/지형(숲/모래)
-- (필수) 알고리즘 선택: BFS, Dijkstra, A*
-- (필수) 규칙 토글: 대각선/가중치
-- (필수) 시뮬레이터: 재생/일시정지/한 스텝, 속도 조절
-- (필수) 시각화: 방문/프론티어/경로/현재 노드
+### Success Metrics
+- ≥ 70% of learners can articulate the difference between BFS and Dijkstra during post-lesson exit tickets.
+- ≥ 80% of classroom sessions complete the "Find the Treasure" level within 10 minutes.
+- Net Promoter Score (educator) ≥ +40 within the pilot cohort.
 
-### v0.2
-- 레벨 **저장/불러오기(JSON)**
-- **경로 없음 원인 진단**(막힌 구간 하이라이트)
-- 접근성: 키보드/스크린리더 기본 라벨
+## 2. Target Users
+### Primary Learners
+- Students in late elementary or early middle school.
+- Comfortable with tablets or Chromebooks but new to algorithmic vocabulary.
 
-### v1.0
-- **튜토리얼 레슨**(단계별 미션)
-- **교사용 가이드**와 과제(최소 스텝, 최소 비용)
-- 다국어(ko/en)
+### Secondary Personas
+- Teachers / facilitators guiding group sessions.
+- Guardians exploring enrichment activities at home.
 
-## 5. 차별점
-- “규칙을 바꾸면 경로가 달라진다”를 **즉시 시각화**.
-- **가중치/휴리스틱**을 색/힌트로 자연스럽게 소개.
+## 3. Product Pillars
+1. **Show the Journey:** Reveal each decision the algorithm makes through animation and narration.
+2. **Tinker without Fear:** Provide undo, reset, and level cloning so experimentation feels safe.
+3. **Connect to the Real World:** Offer story-based levels and reflection prompts relating to navigation problems.
 
-## 6. 비범위(Out of Scope, v1 기준)
-- 사용자 계정/로그인, 클라우드 저장
-- 멀티플레이/온라인 공유 갤러리
-- 복잡한 3D 렌더링
+## 4. Key Features (MVP)
+- **Interactive Grid Editor:** Drag-and-drop start, goal, walls, and weighted tiles. Mobile-friendly gestures.
+- **Algorithm Selector:** BFS, Dijkstra, and A* with explanatory tooltips and progress narration.
+- **Step Controls:** Play, pause, step-forward, step-back, and adjustable speed slider (0.25×–3×).
+- **Level Library:** Pre-built levels (tutorial, maze, detour) plus import/export for JSON.
+- **Hint System:** When no path exists, highlight blocking obstacles and explain why.
+- **Progress Tracker:** Optional star system awarding badges for completing challenge criteria.
 
-## 7. 위험/제약
-- 어린이 UI/문구 난이도 조절 필요
-- 저사양 기기 성능(대형 맵) 이슈 → 맵 크기 가이드
+## 5. Out of Scope (MVP)
+- Competitive multiplayer or real-time collaboration.
+- Login accounts or cloud saves (future iteration post-privacy review).
+- Algorithms beyond BFS/Dijkstra/A* (e.g., Greedy Best-First, Bellman-Ford).
+- Full localization beyond Korean/English copy (TBD).
 
-## 8. 릴리즈 기준
-- 교사 파일럿 3인 피드백 반영
-- 주요 브라우저 최신 2버전 호환
+## 6. User Stories
+1. *Learner* — "As a student, I want to drop different terrains so I can see how the path changes."
+2. *Learner* — "As a player, I want hints when the path fails so I know what to adjust."
+3. *Teacher* — "As a teacher, I want printable walkthroughs so I can plan activities offline."
+4. *Teacher* — "As a facilitator, I want to see which algorithm learners chose most often."
+5. *Content Author* — "As a curriculum designer, I want to create challenge levels via JSON without touching code."
+
+## 7. Competitive Landscape
+- **Code.org Maze Challenges:** Great onboarding but limited to block-based controls.
+- **LightBot / Robot Turtle:** Focused on sequencing; lacks algorithm transparency.
+- **Pathfinding Visualizers (general web):** Typically aimed at adults; uses technical jargon and dense controls.
+
+## 8. Release Strategy
+- Pilot with three partner classrooms (grade 5) using Chromebooks.
+- Collect qualitative feedback through teacher interviews and learner journaling.
+- Iterate bi-weekly based on observation notes and analytics instrumentation.
+
+## 9. Open Questions
+- Should we gamify with XP/coins or stick to narrative milestones?
+- What scaffolding best supports students with color vision deficiencies?
+- Do we need offline printable grids for no-device classrooms?
+
+## 10. Appendices
+- See `SCOPE_PLAN.md` for milestone breakdown and release gating.
+- See `UX_GUIDE.md` for interface principles and motion specs.
+- See `ANALYTICS_METRICS.md` for measurement framework.
