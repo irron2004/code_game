@@ -1,69 +1,68 @@
-# SRS — Algorithm Learning Game
+# Software Requirements Specification (SRS)
 
-## 1. 용어
-- 셀(Cell): 격자 한 칸. 타입(빈/벽/시작/목표/숲/모래).
-- 프론티어: 다음으로 확장될 후보 집합.
-- 가중치: 숲=2, 모래=3(기본값).
+**System:** Algorithm Learning Game Web Application
+**Version:** 0.1.0 (MVP)
+**Last Updated:** 2025-08-28
 
-## 2. 기능 요구사항
-### FR-1 그리드 편집
-- FR-1.1: 브러시(벽/빈/시작/목표/숲/모래)로 클릭/드래그 페인트
-- FR-1.2: 시작/목표 중복 방지(자동 보정)
-- FR-1.3: 맵 사이즈 변경(행/열)
+---
 
-### FR-2 알고리즘 실행
-- FR-2.1: BFS/Dijkstra/A* 중 선택 실행
-- FR-2.2: 규칙 토글(대각선/가중치 사용)
-- FR-2.3: 재생/일시정지/한 스텝/리셋/속도 슬라이더
+## 1. Introduction
+- **Purpose:** Define functional, data, and quality requirements for the browser-based simulator that visualizes BFS, Dijkstra, and A* algorithms on a configurable grid.
+- **Scope:** Client-side application delivered as static assets (`index.html`, CSS, JavaScript modules) runnable without a build step.
+- **References:** `PRD.md`, `UX_GUIDE.md`, `LEVEL_AUTHORING.md`.
 
-### FR-3 시각화
-- FR-3.1: 방문/프론티어/현재 노드 색상 표시
-- FR-3.2: 최종 경로 선으로 렌더링
-- FR-3.3: 상태 패널(방문 수/프론티어 수/경로 길이/메시지)
+## 2. Overall Description
+- **User Classes:** Learners (players), Teachers (facilitators), Content Authors (level creators).
+- **Operating Environment:** Latest Chrome, Edge, and Safari on desktop; Safari and Chrome on iPad/Chromebook. Minimum 1024×600 resolution.
+- **Design Constraints:** No external heavyweight libraries, offline-capable (no server dependency), accessible via keyboard and touch.
 
-### FR-4 파일 I/O (v0.2)
-- FR-4.1: 레벨 JSON **다운로드**
-- FR-4.2: JSON **업로드**로 레벨 복구
-- FR-4.3: 스키마 검증 및 오류 메시지
+## 3. Functional Requirements
+### 3.1 Grid Editing
+- FR-1: Users can toggle tiles between open, wall, start, goal, and weighted cost values (1–9).
+- FR-2: Drag gestures on touch devices paint tiles continuously.
+- FR-3: Undo/redo history stores the last 20 actions.
 
-### FR-5 도움말/튜토리얼 (v1.0)
-- FR-5.1: 툴팁/가이드 모달
-- FR-5.2: 미션 시나리오(조건/힌트)
+### 3.2 Algorithm Simulation
+- FR-4: Simulator must run BFS, Dijkstra, and A* using generator-based step functions exposed from `src/algorithms.js`.
+- FR-5: Play/pause/step controls interact with generator iterators without blocking UI.
+- FR-6: When no valid path exists, system highlights obstructing tiles and surfaces guidance text.
 
-## 3. 비기능 요구사항
-- NFR-1 성능: 중간 크기(예: 40×25) 기준 **평균 60fps**
-- NFR-2 호환: 최신 Chrome/Edge/Safari
-- NFR-3 접근성: 키보드 포커스, ARIA 라벨 제공
-- NFR-4 국제화 준비: 텍스트 분리 구조 설계
-- NFR-5 안정성: 경계 케이스 처리(경로 없음 등)
+### 3.3 Level Management
+- FR-7: Users can import/export level JSON via download/upload dialogs with schema validation (`LEVEL_AUTHORING.md`).
+- FR-8: Built-in tutorial levels load from `src/levels.js` and can be reset to defaults.
+- FR-9: Level metadata stores recommended algorithm, difficulty, and narrative prompt.
 
-## 4. 데이터 모델
-### 4.1 Level JSON 스키마(초안)
-```json
-{
-  "version": 1,
-  "cols": 20,
-  "rows": 15,
-  "start": {"x":1,"y":1},
-  "goal": {"x":18,"y":13},
-  "cells": [0,1,4,5,...] // length = cols*rows, 0=EMPTY,1=WALL,2=START,3=GOAL,4=FOREST,5=SAND
-}
-```
+### 3.4 Feedback & Guidance
+- FR-10: Tooltip copy explains each algorithm in child-friendly terms (≤ 80 characters each).
+- FR-11: Narration panel updates after each algorithm step describing visited nodes and current cost.
+- FR-12: Hint banner triggers when learners press "Help" or simulation detects failure conditions.
 
-## 5. 알고리즘 규칙
+## 4. Data Requirements
+- DR-1: Level JSON structure defined in `LEVEL_AUTHORING.md` with validation prior to import.
+- DR-2: Persistent settings (e.g., animation speed, last algorithm) stored in `localStorage` under namespaced keys `alg-game/*`.
+- DR-3: No personally identifiable information (PII) stored or transmitted.
 
-* BFS: 무가중 그래프 최단 **스텝 수** 최소화
-* Dijkstra: **누적 비용** 최소
-* A*: `g(n)+h(n)`, 휴리스틱: 맨해튼(직교)/옥타일(대각 허용 시)
+## 5. Interface Requirements
+- IR-1: UI uses 48px minimum touch targets and 16px base font for readability.
+- IR-2: Color palette must maintain WCAG 2.1 AA contrast (≥ 4.5:1 for primary text, ≥ 3:1 for UI icons).
+- IR-3: Keyboard controls include tab navigation, space/enter activation, and arrow-key grid movement when focus is on canvas.
 
-## 6. 에러/예외
+## 6. Performance Requirements
+- PR-1: Simulator renders at ≥ 60fps average on 30×30 grid with algorithm running at default speed in Chrome on mid-range laptop.
+- PR-2: Import/export of 30×30 levels completes within 250ms on target browsers.
+- PR-3: Initial page load (uncached) ≤ 2.5s on 3G Fast network conditions (Lighthouse).
 
-* 잘못된 JSON 또는 사이즈 불일치 → 사용자에게 한국어 오류 안내
-* 시작/목표 미존재 → 자동 보정 후 경고
+## 7. Security & Privacy Requirements
+- SPR-1: Application must operate without user accounts; no network requests aside from optional analytics events outlined in `ANALYTICS_METRICS.md`.
+- SPR-2: Provide clear disclosure before enabling any telemetry and include opt-in toggle.
+- SPR-3: Ensure stored data is namespaced to avoid collisions with other localStorage keys.
 
-## 7. 수용 테스트(샘플)
+## 8. Quality Attributes
+- QA-1: Maintainability — Modules should be <200 LOC each and use pure functions where possible.
+- QA-2: Testability — Introduce Vitest specs for `grid.js` and `algorithms.js` covering neighbors, BFS, Dijkstra, A*.
+- QA-3: Accessibility — Support screen-reader-friendly labels and ARIA live regions for narration updates.
+- QA-4: Reliability — Detect and recover from invalid states (e.g., missing start/goal) with user prompts.
 
-* SAT-1: 빈 맵(20×15), 시작(1,1), 목표(18,13)에서 BFS/A* 경로 존재
-* SAT-2: 목표를 벽으로 봉쇄 시 “실패” 메시지 및 프론티어/방문 표시
-* SAT-3: 숲/모래 가중치 적용 시 Dijkstra/A* 경로가 BFS와 다름
-
+## 9. Appendices
+- **A. Glossary:** BFS (Breadth-First Search), Dijkstra (shortest path with weights), A* (heuristic search using Manhattan distance).
+- **B. Traceability Matrix:** Maintain spreadsheet mapping FR/DR/PR to stories in `SCOPE_PLAN.md`.

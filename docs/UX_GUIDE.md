@@ -1,22 +1,48 @@
-# UX 가이드
+# UX & Interaction Guide
 
-## 1. 언어/라벨
-- **짧고 쉬운 말** 사용: “재생”, “멈추기”, “한 칸씩”
-- 규칙 설명 툴팁 예: “대각선 허용을 켜면, 대각선으로도 움직여요”
+**Design Principles:** playful, legible, forgiving.
 
-## 2. 시각 요소
-- 색 구분 명확(색약 대비 고려), 격자선 기본 ON
-- 현재 노드: 따뜻한 색(강조), 경로: 보라/굵기 2~3px
+---
 
-## 3. 조작
-- 터치/마우스 드래그 동일 동작
-- 버튼 최소 40px, 간격 8~12px
-- 되돌리기(리셋) 노출, 파괴적 행동은 툴팁 안내
+## 1. Layout
+- **Top Bar:** Algorithm selector, speed slider, and status badge. Keep copy ≤ 2 words per control.
+- **Left Panel:** Tool palette (start, goal, wall, weight brush, erase). Use icon + label.
+- **Right Panel:** Narration log with collapsible hints and teacher notes toggle.
+- **Bottom Bar:** Playback controls (play/pause, step, reset) sized 56×56px for touch.
 
-## 4. 접근성
-- ARIA 라벨: “재생 버튼”, “속도 슬라이더(초당 프레임)”
-- 키보드 숏컷(예시): Space=재생/일시정지, N=한 스텝, R=리셋, 1~6=브러시
+## 2. Visual Language
+- Primary color: `#2A6DE1` (buttons, highlights).
+- Success color: `#2FB370`; Warning color: `#F5A623`.
+- Walls use dark navy (#1C1C3C); weighted tiles overlay with semi-transparent gradients.
+- Typography: Pretendard or system sans-serif, 16px base, 24px for headings.
 
-## 5. 교육적 피드백
-- 경로 없음 → “벽 때문에 막혔어요(빨간 부분)”
-- 가중치 on → “숲은 2칸, 모래는 3칸처럼 계산해요”
+## 3. Motion & Feedback
+- Step transitions animate visited nodes with 150ms fade/scale.
+- Path reveal uses 250ms "glow" animation after completion.
+- Hints slide in from top with bounce easing; auto-dismiss after 6s unless hovered.
+- Provide haptic feedback cues for supported devices (via `navigator.vibrate`).
+
+## 4. Copy Guidelines
+- Use kid-friendly verbs: "찾기", "도와줘", "다시 시도".
+- Keep algorithm descriptions under 80 characters and avoid jargon (e.g., "BFS는 가까운 길부터 살펴봐요!").
+- Provide teacher-only tooltips with more precise terminology when `Teacher Mode` is enabled.
+
+## 5. Accessibility
+- Ensure focus ring (4px) contrasts with surrounding tile colors.
+- Provide alternative text for icons (`aria-label` or visually hidden spans).
+- Support `Space`/`Enter` for activation, `Arrow` keys to move brush when canvas focused.
+- Offer colorblind-friendly palette toggle (protanopia/deuteranopia safe set).
+
+## 6. Empty & Error States
+- **No Start/Goal:** Prompt "먼저 출발점과 도착점을 놓아볼까요?" with quick-place buttons.
+- **No Path:** Highlight blocking tiles and display two suggestions (remove wall / change weights).
+- **Import Error:** Show modal with validation messages and link to `LEVEL_AUTHORING.md`.
+
+## 7. Responsive Behavior
+- Tablet portrait: Collapse narration panel into tabbed drawer.
+- Small desktop (<1280px): Reduce side panel width, maintain 16px body text.
+- Large desktop: Introduce "Teacher Notes" column with printable tips.
+
+## 8. Future Enhancements
+- Avatar guide providing contextual narration.
+- Achievement badges displayed after challenge completion with shareable image.

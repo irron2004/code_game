@@ -1,14 +1,34 @@
-# 보안/개인정보
+# Security & Privacy Guidelines
 
-## 원칙
-- PII 미수집(초기). 레벨/설정은 로컬 저장.
-- 외부 전송 없음. 쿠키/분석도구 도입 전 동의/문서화 필요.
+The Algorithm Learning Game is designed for young learners; safeguarding data and providing a trustworthy experience is mandatory.
 
-## 아동/교육 준수
-- 학습 도구로서 광고/추적 금지
-- 계정 기능 도입 시 COPPA/GDPR-K 고려(나이 게이트, 부모 동의)
+---
 
-## 데이터 보관
-- 브라우저 `localStorage` 사용 시 키/버전 네이밍 규칙:
-  - `algame:v1:level:last`
-  - `algame:v1:settings`
+## 1. Data Handling Principles
+- Operate as an offline-first application. No personal accounts or cloud storage in MVP.
+- Store only non-sensitive preferences (e.g., animation speed) in `localStorage` under the `alg-game/` namespace.
+- Never store names, emails, or identifiable classroom data.
+
+## 2. Permissions & Telemetry
+- Any analytics events must be optional and disabled by default.
+- Display a clear opt-in dialog for teachers with a summary of collected metrics (`ANALYTICS_METRICS.md`).
+- Provide a "Delete data" button that clears local storage and resets settings.
+
+## 3. Security Controls
+- Validate imported JSON files before applying to the grid; reject malformed content.
+- Escape or sanitize any user-generated text (e.g., custom level titles) before rendering.
+- Maintain dependency hygiene; review third-party packages for licenses and vulnerabilities.
+
+## 4. Compliance Checklist
+- [ ] COPPA alignment: No collection of personal information under age 13.
+- [ ] FERPA awareness: Avoid storing student identifiers.
+- [ ] Accessibility compliance: Conform to WCAG 2.1 AA (see `UX_GUIDE.md`).
+
+## 5. Incident Response
+- Document incidents in internal tracker with timeline, impact, remediation steps.
+- Notify stakeholders (product, legal, partner schools) within 24 hours of detection.
+- Provide follow-up action items and prevention plan post-mortem.
+
+## 6. Future Considerations
+- Evaluate secure cloud sync if accounts become necessary (use OAuth with parental consent).
+- Add automated linting for insecure patterns (e.g., `eval`, dynamic script injection).
