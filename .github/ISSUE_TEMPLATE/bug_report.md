@@ -1,34 +1,24 @@
+
 ---
-name: "Bug report"
-about: "Report a broken flow, crash, or incorrect simulation"
-title: "[Bug] "
-labels: [bug]
-assignees: []
+name: Bug report
+about: 문제를 알려주세요
+labels: bug
 ---
 
-## Summary
-Explain the issue in one or two sentences. Focus on learner impact if possible.
+### 요약
+(한 줄)
 
-## Environment
-- Browser (and version):
-- Device / OS:
-- Level JSON (if applicable):
+### 환경
+- OS/브라우저:
 
-## Steps to Reproduce
-1. 
-2. 
-3. 
+### 재현 단계
+1.
+2.
+3.
 
-## Expected Behavior
-Describe what you expected to happen.
+### 기대/실제
+- 기대:
+- 실제:
 
-## Actual Behavior
-Describe what actually happened. Include errors, screenshots, or console logs.
-
-## Impact
-- [ ] Blocks launch
-- [ ] Major learner issue
-- [ ] Minor / cosmetic
-
-## Additional Notes
-Add attachments, alternate repro steps, or related issues.
+### 첨부
+- 스크린샷/레벨 JSON

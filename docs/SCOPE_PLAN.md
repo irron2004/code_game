@@ -1,40 +1,30 @@
-# Scope & Release Plan
 
-**Planning Horizon:** September–December 2025
-**Squad:** Pathfinder (Product, Engineering, Curriculum, QA)
+# 범위/일정/WBS
 
----
+## 1. 범위
+- In: 격자 편집, BFS/Dijkstra/A*, 규칙 토글, 시각화, JSON I/O, 접근성(기본)
+- Out: 계정/클라우드, 멀티플레이, 분석 대시보드, 3D
 
-## 1. Milestones Overview
-| Milestone | Target Date | Key Outcomes | Exit Criteria |
-| --- | --- | --- | --- |
-| M0 — Foundations | 2025-09-20 | Repo hygiene, documentation baseline, design audits | Docs folder complete, UX wireframes approved |
-| M1 — Core Simulator | 2025-10-25 | Editable grid, BFS playback, hints for blocked paths | BFS generator stable, manual QA pass, performance baseline |
-| M2 — Advanced Algorithms | 2025-11-20 | Dijkstra & A*, weighted tiles, narration panel | Accuracy vs. reference tests ≥ 95%, teacher pilot prep |
-| M3 — Classroom Pilot | 2025-12-15 | Lesson toolkit, analytics instrumentation, pilot debrief | Three classrooms complete session, retro + next steps |
+## 2. 일정(예: 4~5주)
+- M1(주1~2): MVP(편집/시뮬/시각화)
+- M2(주3): JSON I/O + 접근성(키보드)
+- M3(주4): 경로 없음 진단 + 튜토리얼 초안
+- M4(주5): 파일럿 피드백 반영 · 릴리즈
 
-## 2. Workstreams
-1. **Product & Curriculum:** Storyboards, lesson plans, printable worksheets.
-2. **Engineering:** Simulation engine, UI implementation, import/export, accessibility.
-3. **Design & UX:** Visual design system, motion guidelines, copywriting.
-4. **QA & Support:** Test harness, regression suites, support documentation.
+## 3. WBS(요약)
+- 설계: UX 플로우/라벨/색상
+- 구현: grid/algorithms/renderer/sim/UI
+- 품질: 단위/수동/접근성/성능 테스트
+- 문서: PRD/SRS/UX/레벨 가이드
+- 시연: 샘플 레벨/스크린샷
 
-## 3. Resource Allocation
-- Product Manager (0.5 FTE)
-- UX Designer (0.6 FTE)
-- Frontend Engineer (1.0 FTE)
-- Curriculum Designer (0.5 FTE)
-- QA Analyst (0.4 FTE)
+## 4. RACI
+- R: 프론트엔드 개발(또는 코드 에이전트)
+- A: PM/기획
+- C: 교육 자문(교사)
+- I: 이해관계자
 
-## 4. Dependencies & Risks
-- **School Calendar:** Pilot scheduling dependent on partner availability.
-- **Device Variability:** Mixed Chromebooks/iPads may surface touch discrepancies.
-- **Data Policy Review:** Any analytics requires legal approval before launch.
-
-## 5. Change Management
-- Scope changes require triad (PM, Eng, Curriculum) approval during weekly review.
-- Maintain a decision log in `/docs/CHANGELOG.md` (to be created) for significant deviations.
-
-## 6. Reporting
-- Weekly status update includes burndown snapshot, risk log, and upcoming classroom sessions.
-- Post-milestone retros capture wins, blockers, and action items.
+## 5. 리스크/대응
+- 성능 저하 → 배치 렌더/셀 크기 가이드
+- 난이도 과다 → 튜토리얼 단계화·기본 옵션 단순화
+- 데이터 손실 → JSON 검증/버전 키

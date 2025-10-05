@@ -1,22 +1,14 @@
-## Summary
-- [ ] Feature
-- [ ] Bug fix
-- [ ] Documentation
-- [ ] Refactor / Code cleanup
-- [ ] Other: _describe_
 
-## Checklist
-- [ ] I reviewed `docs/PRD.md` and `docs/SRS.md` for scope alignment.
-- [ ] UI changes include child-friendly copy, tooltips, or guidance where needed.
-- [ ] I confirmed the simulator maintains 60fps on medium grids during playback.
-- [ ] New or updated logic has automated tests or manual test notes.
-- [ ] Docs under `/docs` were updated when relevant.
+## 요약
+- (변경 내용 한 줄 요약)
 
-## Testing
-Describe manual or automated testing performed (commands, browsers, devices).
+## 상세 변경
+- [ ] 기능/버그 설명
+- [ ] UI 캡처 또는 GIF (선택)
+- [ ] 레벨 JSON (재현/데모용, 선택)
 
-## Screenshots / Recordings (optional)
-Attach GIFs, screenshots, or level JSON samples that illustrate the change.
-
-## Notes for Reviewers
-Link related issues, alternative approaches considered, and follow-up tasks.
+## 체크리스트
+- [ ] 어린이/교사 관점 툴팁·라벨 추가
+- [ ] 경계 케이스 처리(경로 없음/시작=목표)
+- [ ] 성능 영향 점검(중간 맵 60fps 근접)
+- [ ] 문서(`/docs`) 갱신

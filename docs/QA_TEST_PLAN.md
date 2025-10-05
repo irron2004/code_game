@@ -1,54 +1,31 @@
-# QA & Test Plan
 
-**Objective:** Ensure the Algorithm Learning Game operates reliably across supported browsers/devices while delivering age-appropriate feedback.
+# QA/테스트 계획
 
----
+## 1. 전략
+- 단위 테스트: `grid.js`, `algorithms.js`
+- 수동 시나리오: UI/드래그/반응형/접근성
+- 교차 브라우저: Chrome/Edge/Safari 최신 2버전
 
-## 1. Test Environments
-- Chrome (latest) on Windows 11, macOS, and ChromeOS.
-- Safari on iPadOS 17.
-- Edge (latest) on Windows 11 touch laptop.
-- Optional: Firefox ESR for accessibility smoke checks.
+## 2. 단위 테스트(예시)
+- Grid.inBounds / neighbors (대각/가중치 on/off)
+- BFS: 직선 통로 최단 스텝 = dx+dy
+- Dijkstra: 가중치 경유 시 총비용 최소
+- A*: 균일 비용에서 BFS 경로와 일치
 
-## 2. Test Types
-1. **Unit Tests (Vitest):**
-   - `grid.neighbors` adjacency rules (orthogonal + optional diagonals).
-   - BFS, Dijkstra, and A* shortest path assertions against golden fixtures.
-2. **Integration Tests:**
-   - Algorithm playback controls (play, pause, step) maintain consistent state.
-   - Level import/export cycle preserves metadata and weighted costs.
-3. **Manual Exploratory:**
-   - Touch interactions on iPad (drawing walls, pinch zoom if added).
-   - Accessibility features (keyboard navigation, screen reader cues).
-4. **Performance Benchmarks:**
-   - Measure FPS with 30×30 grid using Chrome DevTools Performance panel.
-   - Record import/export timings via browser performance markers.
+## 3. 수동 테스트
+- T-UI-01: 브러시 전환·드래그 반영
+- T-SIM-02: 재생→정지→한 스텝 일관성
+- T-ERR-03: 봉쇄 맵 “실패” 메시지
+- T-IO-04: JSON 내보내기/불러오기 동등성
+- T-A11Y-05: 탭 포커스/라벨 읽힘/숏컷 동작
 
-## 3. Regression Suite
-| Area | Scenario | Frequency |
-| --- | --- | --- |
-| Grid Editing | Paint walls, set start/goal, undo/redo | Each release |
-| Simulation | Run BFS/Dijkstra/A* on sample levels | Each release |
-| Hints | Trigger no-path state and verify highlight | Each release |
-| Import/Export | Round-trip JSON for tutorial level | Each release |
-| Responsiveness | Resize window (mobile, tablet, desktop) | Weekly |
+## 4. 성능
+- 40×25, 벽 30%에서 평균 60fps 근접
+- 캔버스 상태 변경 최소화, 그리기 배치
 
-## 4. Acceptance Criteria Checklist
-- [ ] All automated tests passing (`npm test`).
-- [ ] Manual smoke checklist signed off by QA analyst.
-- [ ] Performance metrics meet thresholds in `SRS.md`.
-- [ ] Accessibility audit (axe or Lighthouse) has no critical issues.
-
-## 5. Defect Triage
-- Severity P0 (blocker): Simulation unusable, crashes, or data loss.
-- Severity P1 (major): Feature broken but workaround exists.
-- Severity P2 (minor): Cosmetic or low-impact copy issues.
-- Severity P3 (nice-to-have): Enhancements or polish tasks.
-
-## 6. Reporting
-- Test runs documented in QA log (Notion/Sheets) with links to PRs.
-- Bugs recorded via `.github/ISSUE_TEMPLATE/bug_report.md`.
-
-## 7. Future Automation
-- Add Playwright smoke tests covering grid editing and algorithm playback.
-- Integrate GitHub Actions workflow to run Vitest on push/PR.
+## 5. 버그 보고(템플릿)
+- 제목: `[모듈] 요약`
+- 환경: OS/브라우저 버전
+- 재현: 1) … 2) …
+- 기대/실제
+- 첨부: 스크린샷/레벨 JSON

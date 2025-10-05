@@ -1,22 +1,18 @@
+
 ---
-name: "Feature request"
-about: "Propose a new learner/teacher capability or improvement"
-title: "[Feature] "
-labels: [enhancement]
-assignees: []
+name: Feature request
+about: 새 기능을 제안합니다
+labels: enhancement
 ---
 
-## Problem to Solve
-Describe the learner or classroom challenge we want to solve.
+### 문제/배경
+(어떤 학습 문제를 해결하려나요?)
 
-## Proposed Solution
-Outline the idea. Screens, states, or algorithms that would change.
+### 제안
+(요구되는 동작/UX)
 
-## Success Criteria
-List measurable outcomes (e.g., faster completion, clearer feedback).
+### 대안
+(고려한 옵션들)
 
-## Dependencies / Risks
-Call out related docs, technical risks, or research required.
-
-## Additional Context
-Add sketches, references, or level files that inspired the idea.
+### 교육적 효과
+(학습 목표와의 연결)
