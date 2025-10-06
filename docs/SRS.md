@@ -1,3 +1,4 @@
+
 # SRS — Algorithm Learning Game
 
 ## 1) 용어

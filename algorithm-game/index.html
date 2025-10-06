@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>알고리즘 학습 게임 (최단경로 시뮬레이터)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header>
+    <h1>알고리즘 학습 게임 <span class="sub">– 최단경로 시뮬레이터 (유·초등)</span></h1>
+  </header>
+
+  <main>
+    <section class="left">
+      <div class="panel">
+        <h2>게임 안내</h2>
+        <p>시작점에서 목표까지 최단 경로를 찾는 과정을 시각화하는 학습 도구입니다. 브러시로 지형을 배치하고 여러 알고리즘이 경로를 찾는 방식을 비교해 보세요.</p>
+        <ol class="steps">
+          <li>샘플 레벨을 불러오거나 브러시로 맵을 구성합니다.</li>
+          <li>규칙 패널에서 사용할 알고리즘과 옵션을 고릅니다.</li>
+          <li>재생 버튼을 눌러 탐색 과정을 관찰하고, 상태 패널에서 진행 상황을 확인합니다.</li>
+        </ol>
+        <p class="hint keyboard">방향키로 커서를 움직이고 스페이스바로 현재 브러시를 적용할 수 있습니다.</p>
+        <button id="startTutorialBtn" type="button" class="primary">튜토리얼 시작</button>
+      </div>
+      <div class="panel">
+        <h2>규칙 설정</h2>
+        <label>
+          알고리즘
+          <select id="algoSelect">
+            <option value="BFS">BFS (모든 가중치 1)</option>
+            <option value="Dijkstra">Dijkstra (가중치 고려)</option>
+            <option value="AStar">A* (가중치+휴리스틱)</option>
+          </select>
+        </label>
+
+        <label class="row">
+          <input type="checkbox" id="allowDiagonal" />
+          대각선 이동 허용
+        </label>
+
+        <label class="row">
+          <input type="checkbox" id="useWeights" />
+          지형 가중치 사용(숲=2, 모래=3)
+        </label>
+
+        <div class="grid-size">
+          <label>가로(열) <input type="number" id="cols" min="8" max="60" value="20"></label>
+          <label>세로(행) <input type="number" id="rows" min="8" max="40" value="15"></label>
+          <button id="resizeBtn" title="그리드 크기 변경">크기 적용</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>브러시</h2>
+        <div class="brushes">
+          <label><input type="radio" name="brush" value="WALL" checked> 벽</label>
+          <label><input type="radio" name="brush" value="EMPTY"> 빈칸</label>
+          <label><input type="radio" name="brush" value="START"> 시작</label>
+          <label><input type="radio" name="brush" value="GOAL"> 목표</label>
+          <label><input type="radio" name="brush" value="FOREST"> 숲(2)</label>
+          <label><input type="radio" name="brush" value="SAND"> 모래(3)</label>
+        </div>
+        <p class="hint">캔버스를 클릭/드래그하여 칠하세요.</p>
+      </div>
+
+      <div class="panel">
+        <h2>레벨 저장/불러오기</h2>
+        <div class="io-actions">
+          <button id="exportLevelBtn" type="button">JSON 다운로드</button>
+          <button id="copyLevelBtn" type="button">JSON 복사</button>
+          <label class="file-upload">
+            <input type="file" id="importLevelInput" accept="application/json" hidden>
+            <span>JSON 불러오기</span>
+          </label>
+        </div>
+        <textarea id="levelJsonInput" rows="4" placeholder="여기에 JSON을 붙여넣고 적용을 누르면 맵이 갱신됩니다."></textarea>
+        <div class="io-actions secondary">
+          <button id="applyLevelJsonBtn" type="button">텍스트 적용</button>
+          <button id="clearJsonInputBtn" type="button">입력 지우기</button>
+        </div>
+        <p class="hint">JSON 파일을 불러오거나 텍스트를 붙여넣어 맵을 공유할 수 있습니다.</p>
+        <p id="ioMsg" class="hint" aria-live="polite"></p>
+      </div>
+
+      <div class="panel">
+        <h2>시뮬레이션</h2>
+        <div class="controls">
+          <button id="playBtn">▶ 재생</button>
+          <button id="pauseBtn">⏸ 일시정지</button>
+          <button id="stepBtn">⏯ 한 스텝</button>
+          <button id="resetBtn">⟲ 리셋</button>
+        </div>
+        <label>속도
+          <input id="speed" type="range" min="1" max="60" value="20">
+          <span id="speedVal">20</span> FPS
+        </label>
+
+        <div class="toggles">
+          <label><input type="checkbox" id="showVisited" checked> 방문</label>
+          <label><input type="checkbox" id="showFrontier" checked> 프론티어</label>
+          <label><input type="checkbox" id="showPath" checked> 경로</label>
+          <label><input type="checkbox" id="showGridLines" checked> 격자선</label>
+        </div>
+
+        <div class="maps">
+          <button id="randomMapBtn">무작위 벽 배치</button>
+          <button id="clearMapBtn">맵 비우기</button>
+          <select id="sampleLevel">
+            <option value="">샘플 레벨 불러오기…</option>
+          </select>
+          <button id="loadLevelBtn">불러오기</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>상태</h2>
+        <ul class="status">
+          <li>현재: <span id="statusCurrent">-</span></li>
+          <li>방문 수: <span id="statusVisited">0</span></li>
+          <li>프론티어 수: <span id="statusFrontier">0</span></li>
+          <li>경로 길이: <span id="statusPath">-</span></li>
+          <li>메시지: <span id="statusMsg">준비됨</span></li>
+        </ul>
+        <button id="noPathHelpBtn" type="button" class="link-button">도움 받기</button>
+      </div>
+    </section>
+
+    <section class="right">
+      <canvas id="game" width="800" height="600" aria-label="그리드 시뮬레이터"></canvas>
+      <p class="legend">
+        ■ 벽 ■ 시작 ■ 목표 ■ 숲(2) ■ 모래(3) ■ 방문 ■ 프론티어 ■ 현재 ■ 경로
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <small>© 2025 Algorithm Learning Game – MIT License. 교육·프로토타입용.</small>
+  </footer>
+
+  <div id="onboardingOverlay" class="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle" hidden>
+    <div class="onboarding__content">
+      <h2 id="onboardingTitle">빠른 조작 안내</h2>
+      <ul class="onboarding__list">
+        <li><kbd>Space</kbd> 재생/멈춤</li>
+        <li><kbd>N</kbd> 한 스텝 실행</li>
+        <li><kbd>R</kbd> 리셋</li>
+        <li><kbd>1~6</kbd> 브러시 전환</li>
+      </ul>
+      <label class="onboarding__checkbox">
+        <input type="checkbox" id="onboardingSkip"> 다시 보지 않기
+      </label>
+      <button id="onboardingClose" type="button" class="primary">시작하기</button>
+    </div>
+  </div>
+
+  <div id="tutorialModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle" hidden>
+    <div class="modal__content">
+      <div class="modal__header">
+        <h2 id="tutorialTitle"></h2>
+        <button id="tutorialClose" type="button" class="modal__close" aria-label="닫기">×</button>
+      </div>
+      <p id="tutorialBody" class="modal__lead"></p>
+      <ul id="tutorialBulletList" class="modal__list"></ul>
+      <div class="modal__footer">
+        <span id="tutorialProgress" class="modal__progress"></span>
+        <div class="modal__actions">
+          <button id="tutorialPrev" type="button">이전</button>
+          <button id="tutorialNext" type="button" class="primary">다음 단계</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="noPathToast" class="toast" aria-live="assertive" role="status" hidden>
+    <button id="noPathToastClose" type="button" class="toast__close" aria-label="닫기">×</button>
+    <div class="toast__body">
+      <strong id="noPathToastTitle"></strong>
+      <p id="noPathToastMsg"></p>
+      <div id="noPathToastActions" class="toast__actions"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
