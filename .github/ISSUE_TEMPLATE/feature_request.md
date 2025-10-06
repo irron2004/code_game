@@ -1,4 +1,3 @@
-
 ---
 name: Feature request
 about: 새 기능을 제안합니다
