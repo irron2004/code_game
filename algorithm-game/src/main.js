@@ -10,6 +10,79 @@ import { createStore } from './store.js';
 
 const el = (sel) => document.querySelector(sel);
 const els = (sel) => Array.from(document.querySelectorAll(sel));
+const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function getFocusableElements(container){
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(focusableSelector)).filter((node) => {
+    if (node.closest('[hidden]')) return false;
+    if (node.getAttribute('aria-hidden') === 'true') return false;
+    const style = typeof getComputedStyle === 'function' ? getComputedStyle(node) : null;
+    if (!style) return true;
+    return style.display !== 'none' && style.visibility !== 'hidden';
+  });
+}
+
+function focusElement(node){
+  if (node && typeof node.focus === 'function'){
+    node.focus();
+    return true;
+  }
+  return false;
+}
+
+function captureActiveElement(){
+  const active = document.activeElement;
+  return active && typeof active.focus === 'function' ? active : null;
+}
+
+let activeFocusTrap = null;
+
+function activateFocusTrap(container){
+  if (!container) return;
+  activeFocusTrap?.dispose?.();
+  const handler = (event) => {
+    if (event.key !== 'Tab') return;
+    const focusable = getFocusableElements(container);
+    if (!focusable.length){
+      event.preventDefault();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (!container.contains(active)){
+      event.preventDefault();
+      first.focus();
+      return;
+    }
+    if (event.shiftKey){
+      if (active === first){
+        event.preventDefault();
+        last.focus();
+      }
+    } else if (active === last){
+      event.preventDefault();
+      first.focus();
+    }
+  };
+  container.addEventListener('keydown', handler);
+  activeFocusTrap = {
+    container,
+    dispose(){
+      container.removeEventListener('keydown', handler);
+      if (activeFocusTrap?.container === container){
+        activeFocusTrap = null;
+      }
+    },
+  };
+}
+
+function deactivateFocusTrap(container){
+  if (activeFocusTrap?.container === container){
+    activeFocusTrap.dispose();
+  }
+}
 
 const canvas = el('#game');
 const algoSelect = el('#algoSelect');
@@ -98,6 +171,8 @@ let latestNoPathSignature = null;
 let displayedNoPathSignature = null;
 let dismissedNoPathSignature = null;
 let tutorialState = { active: false, index: 0, saved: null };
+let tutorialPreviouslyFocused = null;
+let onboardingPreviouslyFocused = null;
 
 populateSamples();
 
@@ -506,20 +581,33 @@ function loadTutorialStep(index){
 
 function openTutorialModal(){
   if (!tutorialModal) return;
+  tutorialPreviouslyFocused = captureActiveElement();
   tutorialModal.hidden = false;
   tutorialModal.classList.add('open');
+  if (!focusElement(tutorialNext) && !focusElement(tutorialPrev)){
+    if (!focusElement(tutorialClose)){
+      const [firstFocusable] = getFocusableElements(tutorialModal);
+      focusElement(firstFocusable);
+    }
+  }
+  activateFocusTrap(tutorialModal);
 }
 
 function closeTutorialModal(restore = true){
   if (!tutorialModal) return;
   tutorialModal.classList.remove('open');
   tutorialModal.hidden = true;
+  deactivateFocusTrap(tutorialModal);
   if (restore && tutorialState.saved){
     const restoredGrid = gridFromJson(tutorialState.saved.grid);
     resetForNewGrid(restoredGrid);
     applyRulesConfig(tutorialState.saved.rules);
   }
   tutorialState = { active: false, index: 0, saved: null };
+  if (tutorialPreviouslyFocused && document.contains(tutorialPreviouslyFocused)){
+    focusElement(tutorialPreviouslyFocused);
+  }
+  tutorialPreviouslyFocused = null;
 }
 
 function startTutorial(){
@@ -548,8 +636,14 @@ function initOnboarding(){
   if (!onboardingOverlay) return;
   const dismissed = localStorage.getItem('onboardingDismissed') === 'true';
   if (dismissed) return;
+  onboardingPreviouslyFocused = captureActiveElement();
   onboardingOverlay.hidden = false;
   onboardingOverlay.classList.add('visible');
+  if (!focusElement(onboardingClose)){
+    const [firstFocusable] = getFocusableElements(onboardingOverlay);
+    focusElement(firstFocusable);
+  }
+  activateFocusTrap(onboardingOverlay);
 }
 
 function closeOnboarding(){
@@ -563,6 +657,11 @@ function closeOnboarding(){
   }
   onboardingOverlay.classList.remove('visible');
   onboardingOverlay.hidden = true;
+  deactivateFocusTrap(onboardingOverlay);
+  if (onboardingPreviouslyFocused && document.contains(onboardingPreviouslyFocused)){
+    focusElement(onboardingPreviouslyFocused);
+  }
+  onboardingPreviouslyFocused = null;
 }
 
 function downloadLevelJson(){
