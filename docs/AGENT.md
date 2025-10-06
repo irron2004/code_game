@@ -67,8 +67,11 @@
 - 문서 최신화.
 
 ## 배포 메모
-- Railway에서 자동 감지 배포 시 `start.sh not found` 오류가 나면 Start Command를 `npm start`로 설정하고, 자세한 가이드는 `docs/DEPLOY_TROUBLESHOOTING.md` 참고.
-- Docker 배포도 가능하며, `Dockerfile`은 Nginx로 `algorithm-game/`을 서빙하도록 구성되어 있습니다.
+- Railway Node 모드: Start Command를 `npm start`로 설정합니다 (`server.js`가 Express 정적 서버 제공).
+- Railway Docker 모드: Start Command를 비워 두고 컨테이너 EntryPoint(`/docker-entrypoint.sh`)를 그대로 사용합니다. `npm start`가 남아 있으면 `The executable npm could not be found.` 오류가 발생합니다.
+- Docker 모드에서는 Service → Networking → Domains에서 포트 8080을 노출해야 기본 도메인이 생성됩니다.
+- 빌드/런타임 오류(`start.sh not found`, `could not determine build`, `npm could not be found`)는 `docs/DEPLOY_TROUBLESHOOTING.md`에서 원인과 조치를 확인하세요.
+- Docker 배포 또한 가능하며, `Dockerfile`은 Nginx로 `algorithm-game/`을 서빙하도록 구성되어 있습니다.
 
 ## 로컬 실행 & 테스트
 - 실행(권장): `npm install && npm start` — Express 서버가 `algorithm-game/`을 서빙하며 `PORT`를 사용합니다.

@@ -19,6 +19,8 @@ export class Renderer {
       path: getCss('--path'),
       line: getCss('--line'),
       cursor: getCss('--cursor'),
+      boundary: getCss('--boundary'),
+      mask: getCss('--mask'),
     };
     function getCss(name){
       return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -56,6 +58,14 @@ export class Renderer {
       }
     }
 
+    if (options.unreachable && options.unreachable.size){
+      ctx.fillStyle = this.colors.mask || 'rgba(52,73,94,0.18)';
+      for (const key of options.unreachable){
+        const [x,y] = key.split(',').map(Number);
+        ctx.fillRect(x*s, y*s, s, s);
+      }
+    }
+
     // 방문/프론티어
     if (options.showVisited && state?.visited){
       ctx.fillStyle = this.colors.visited;
@@ -69,6 +79,15 @@ export class Renderer {
       for (const k of state.frontier){
         const [x,y] = k.split(',').map(Number);
         ctx.fillRect(x*s, y*s, s, s);
+      }
+    }
+
+    if (options.boundaryWalls && options.boundaryWalls.size){
+      ctx.strokeStyle = this.colors.boundary || '#e74c3c';
+      ctx.lineWidth = Math.max(3, s * 0.28);
+      for (const key of options.boundaryWalls){
+        const [x,y] = key.split(',').map(Number);
+        ctx.strokeRect(x*s + 0.5, y*s + 0.5, s - 1, s - 1);
       }
     }
 

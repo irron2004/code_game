@@ -21,7 +21,7 @@
 
 ## 키보드 조작법
 - 화살표: 커서 이동
-- 스페이스바: 현재 브러시로 칸 칠하기
+- 스페이스바: 현재 브러시 적용/해제(동일 브러시가 있으면 빈칸으로 토글)
 - `P` 또는 `Enter`: 시뮬레이션 재생/일시정지 토글
 - `N`: 한 스텝 진행
 - `R`: 리셋 (시작/목표 위치로 커서도 복귀)
@@ -41,5 +41,7 @@ Grid와 알고리즘 모듈의 핵심 로직이 검증되며, 테스트 커버�
    - Start Command를 `npm start`로 설정(이전 `start.sh` 값 제거).
    - `server.js`는 `algorithm-game/` 폴더를 정적 자산으로 서빙하며 `PORT` 환경 변수를 사용합니다.
 2. **Docker** — Service 타입을 Docker로 선택하고 `Dockerfile`을 지정합니다. 컨테이너는 Nginx로 정적 자산을 서빙하며, `PORT` 환경변수에 따라 바인딩합니다.
+   - Start Command는 비워 두고 컨테이너 기본 EntryPoint(`/docker-entrypoint.sh`)가 실행되도록 설정하세요. 이전에 `npm start`를 설정했다면 제거하지 않으면 `The executable npm could not be found.` 오류가 발생합니다.
+   - 배포 후 Service → Networking → Domains에서 포트 8080을 노출하거나 기본 도메인을 생성해야 퍼블릭 링크가 활성화됩니다.
 
-Railway에서 “Start Command not found” 또는 “could not determine how to build” 오류가 발생하면 `docs/DEPLOY_TROUBLESHOOTING.md`를 참고하세요.
+Railway에서 “Start Command not found”, “could not determine how to build”, 또는 `The executable npm could not be found.` 오류가 발생하면 `docs/DEPLOY_TROUBLESHOOTING.md`를 참고하세요.

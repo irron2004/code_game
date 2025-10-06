@@ -12,10 +12,12 @@ The playable prototype lives in `algorithm-game/`. Load `index.html` together wi
 
 ## Level Sharing & Keyboard Controls
 - 좌측 패널의 **레벨 저장/불러오기**에서 JSON을 다운로드·복사하거나 파일/텍스트로 불러올 수 있습니다 (스키마는 `docs/LEVEL_AUTHORING.md`).
-- 화살표 키로 격자 커서를 이동하고 스페이스바로 현재 브러시를 칠합니다. `P`/`Enter`는 재생·일시정지 토글, `N`은 한 스텝, `R`은 리셋, `1~6`은 브러시 변경입니다.
+- 화살표 키로 격자 커서를 이동하고 스페이스바로 현재 브러시를 적용/해제합니다(같은 브러시가 있으면 빈칸으로 토글). `P`/`Enter`는 재생·일시정지 토글, `N`은 한 스텝, `R`은 리셋, `1~6`은 브러시 변경입니다.
 
-## Deployment Notes
-- Railway 빌드 오류(`start.sh not found`, `could not determine build`)가 발생하면 `docs/DEPLOY_TROUBLESHOOTING.md`를 참고하고 Start Command를 `npm start`로 교체하세요.
+- Node 모드: `package.json`과 `server.js`를 사용하며 Start Command는 `npm start`로 설정합니다.
+- Docker 모드: Start Command를 비워 두고 컨테이너 EntryPoint(`/docker-entrypoint.sh`)를 그대로 사용하세요. `npm start`로 설정되어 있으면 `The executable npm could not be found.` 오류가 발생합니다.
+- Docker 모드에서는 배포 후 Service → Networking → Domains에서 포트 8080을 노출해야 퍼블릭 링크가 생성됩니다.
+- 공통: 빌드/실행 오류(`start.sh not found`, `could not determine build`, `npm could not be found`)가 발생하면 `docs/DEPLOY_TROUBLESHOOTING.md`에서 원인과 조치를 확인하세요.
 
 ## Coding Style & Naming Conventions
 Use two-space indentation and concise ES modules with named exports. Favor pure functions and immutable data, mirroring the existing grid and renderer patterns. Classes stay PascalCase (`Renderer`), functions and constants use camelCase, and enums/flags are UPPERCASE (`Cell.WALL`). When adding UI copy, supply Korean defaults alongside English context as seen in status labels. Never bundle large third-party libraries without prior alignment.

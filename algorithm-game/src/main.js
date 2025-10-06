@@ -3,6 +3,10 @@ import { Grid, Cell } from './grid.js';
 import { Renderer } from './renderer.js';
 import { Simulator, Player } from './simulator.js';
 import { SAMPLE_LEVELS, randomWalls } from './levels.js';
+import { exportLevel, gridFromJson, validateLevelJson } from './level_io.js';
+import { analyzeNoPath, tryWhatIf } from './no_path_advice.js';
+import { TUTORIAL_STEPS } from './tutorial.js';
+import { createStore } from './store.js';
 
 const el = (sel) => document.querySelector(sel);
 const els = (sel) => Array.from(document.querySelectorAll(sel));
@@ -43,38 +47,59 @@ const stVisited = el('#statusVisited');
 const stFrontier = el('#statusFrontier');
 const stPath = el('#statusPath');
 const stMsg = el('#statusMsg');
+const ioMsg = el('#ioMsg');
+const noPathToast = el('#noPathToast');
+const noPathToastTitle = el('#noPathToastTitle');
+const noPathToastMsg = el('#noPathToastMsg');
+const noPathToastActions = el('#noPathToastActions');
+const noPathToastClose = el('#noPathToastClose');
+const noPathHelpBtn = el('#noPathHelpBtn');
+if (noPathHelpBtn) noPathHelpBtn.disabled = true;
+const tutorialModal = el('#tutorialModal');
+const tutorialTitle = el('#tutorialTitle');
+const tutorialBody = el('#tutorialBody');
+const tutorialBulletList = el('#tutorialBulletList');
+const tutorialProgress = el('#tutorialProgress');
+const tutorialPrev = el('#tutorialPrev');
+const tutorialNext = el('#tutorialNext');
+const tutorialClose = el('#tutorialClose');
+const tutorialStartBtn = el('#startTutorialBtn');
+const onboardingOverlay = el('#onboardingOverlay');
+const onboardingClose = el('#onboardingClose');
+const onboardingSkip = el('#onboardingSkip');
 
 let grid = new Grid(+colsInput.value, +rowsInput.value);
 let renderer = new Renderer(canvas, grid);
 renderer.resizeToFit();
+const store = createStore({
+  rules: {
+    algorithm: algoSelect.value,
+    allowDiagonal: allowDiagonal.checked,
+    useWeights: useWeights.checked,
+  },
+  sim: {
+    fps: +speedRange.value,
+    running: false,
+  },
+});
 
-const rules = reactiveRules();
+let rules = store.get().rules;
 let sim = new Simulator(grid, rules);
 let player = new Player(sim, onUpdate);
+player.setFPS(store.get().sim.fps);
 let cursor = createCursor();
 let painting = false;
 let currentBrush = 'WALL';
 const brushRadios = els('input[name="brush"]');
 const brushOrder = ['WALL','EMPTY','START','GOAL','FOREST','SAND'];
+let noPathOverlay = null;
+let whatIfResults = [];
+let latestNoPathSignature = null;
+let displayedNoPathSignature = null;
+let dismissedNoPathSignature = null;
+let tutorialState = { active: false, index: 0, saved: null };
 
 populateSamples();
-
-function reactiveRules(){
-  return new Proxy({
-    algorithm: algoSelect.value,
-    allowDiagonal: allowDiagonal.checked,
-    useWeights: useWeights.checked,
-  },{
-    set(obj, prop, val){
-      obj[prop]=val;
-      // 알고리즘/규칙 변경 시 제너레이터 새로 구성
-      sim = new Simulator(grid, rules);
-      player = new Player(sim, onUpdate);
-      draw();
-      return true;
-    }
-  });
-}
 
 function draw(){
   renderer.gridLines = showGridLines.checked;
@@ -84,12 +109,48 @@ function draw(){
     showPath: showPath.checked,
     showGridLines: showGridLines.checked,
     cursor,
+    boundaryWalls: noPathOverlay?.boundary,
+    unreachable: noPathOverlay?.unreachable,
   });
 }
 
 function onUpdate(state){
+  updateNoPathHints(state);
   draw();
   updateStatus(state);
+}
+
+function updateNoPathHints(state){
+  if (!state){
+    clearNoPathUi();
+    return;
+  }
+  if (!sim.done){
+    noPathOverlay = null;
+    whatIfResults = [];
+    hideNoPathToast();
+    latestNoPathSignature = null;
+    displayedNoPathSignature = null;
+    if (noPathHelpBtn) noPathHelpBtn.disabled = true;
+    return;
+  }
+  if (state.reached){
+    clearNoPathUi();
+    return;
+  }
+  noPathOverlay = analyzeNoPath(grid, rules);
+  whatIfResults = tryWhatIf(grid, rules);
+  if (noPathHelpBtn) noPathHelpBtn.disabled = false;
+  const signature = makeNoPathSignature();
+  if (signature !== latestNoPathSignature){
+    dismissedNoPathSignature = null;
+  }
+  latestNoPathSignature = signature;
+  renderNoPathToast(whatIfResults);
+  if (signature !== displayedNoPathSignature && signature !== dismissedNoPathSignature){
+    showNoPathToast();
+    displayedNoPathSignature = signature;
+  }
 }
 
 function updateStatus(state){
@@ -118,8 +179,36 @@ function ensureStartGoal(){
   grid.set(grid.goal.x, grid.goal.y, Cell.GOAL);
 }
 
-function applyBrush(pos, brush){
+function brushToCell(brush){
+  switch(brush){
+    case 'EMPTY': return Cell.EMPTY;
+    case 'WALL': return Cell.WALL;
+    case 'START': return Cell.START;
+    case 'GOAL': return Cell.GOAL;
+    case 'FOREST': return Cell.FOREST;
+    case 'SAND': return Cell.SAND;
+    default: return null;
+  }
+}
+
+function applyBrush(pos, brush, options={}){
   if (!grid.inBounds(pos.x,pos.y)) return;
+  const { toggle=false } = options;
+  const current = grid.get(pos.x,pos.y);
+  const targetCell = brushToCell(brush);
+
+  if (toggle && targetCell !== null && targetCell !== Cell.START && targetCell !== Cell.GOAL && targetCell !== Cell.EMPTY && current === targetCell){
+    grid.set(pos.x,pos.y, Cell.EMPTY);
+    ensureStartGoal();
+    player.reset();
+    updateSim({ running: false });
+    draw();
+    return;
+  }
+
+  if (toggle && brush === 'EMPTY' && current === Cell.EMPTY){
+    return;
+  }
   // 시작·목표 칸은 덮으면 역할을 재배치
   switch(brush){
     case 'WALL': grid.set(pos.x,pos.y, Cell.WALL); break;
@@ -131,14 +220,17 @@ function applyBrush(pos, brush){
   }
   ensureStartGoal();
   player.reset();
+  updateSim({ running: false });
   draw();
 }
 
 function togglePlay(){
   if (player.isPlaying()){
     player.pause();
+    updateSim({ running: false });
   } else {
     player.play();
+    updateSim({ running: true });
   }
 }
 
@@ -154,6 +246,20 @@ function handleKeyDown(e){
   const activeTag = (document.activeElement?.tagName || '').toLowerCase();
   if (['input', 'select', 'textarea'].includes(activeTag)) return;
   const key = e.key;
+  if (tutorialState.active){
+    if (key === 'Escape'){
+      e.preventDefault();
+      closeTutorialModal(true);
+    }
+    return;
+  }
+  if (onboardingOverlay && !onboardingOverlay.hidden){
+    if (key === 'Escape'){
+      e.preventDefault();
+      closeOnboarding();
+    }
+    return;
+  }
   const lower = key.length === 1 ? key.toLowerCase() : key;
   switch(lower){
     case 'ArrowUp':
@@ -175,7 +281,7 @@ function handleKeyDown(e){
     case ' ':
     case 'Spacebar':
       e.preventDefault();
-      applyBrush(cursor, currentBrush);
+      applyBrush(cursor, currentBrush, { toggle: true });
       break;
     case 'Enter':
     case 'p':
@@ -185,10 +291,12 @@ function handleKeyDown(e){
     case 'n':
       e.preventDefault();
       player.step();
+      updateSim({ running: false });
       break;
     case 'r':
       e.preventDefault();
       player.reset();
+      updateSim({ running: false });
       cursor = createCursor();
       draw();
       break;
@@ -204,84 +312,324 @@ function createCursor(){
 }
 
 function resetForNewGrid(newGrid){
+  clearNoPathUi();
   grid = newGrid;
   renderer = new Renderer(canvas, grid);
   renderer.resizeToFit();
-  cursor = createCursor();
   sim = new Simulator(grid, rules);
+  player?.pause?.();
   player = new Player(sim, onUpdate);
+  player.setFPS(store.get().sim.fps);
+  player.reset();
+  updateSim({ running: false });
+  cursor = createCursor();
   draw();
 }
 
-function serializeGrid(){
-  return JSON.stringify(grid.toJSON(), null, 2);
+function setIoMessage(text, isError=false){
+  if (!ioMsg) return;
+  ioMsg.textContent = text;
+  ioMsg.style.color = isError ? '#e74c3c' : '#6b7a90';
+  ioMsg.setAttribute('data-state', isError ? 'error' : 'info');
+}
+
+function updateSim(partial){
+  const current = store.get().sim;
+  const next = { ...current, ...partial };
+  store.set({ sim: next });
+  if (partial.fps !== undefined){
+    player?.setFPS?.(next.fps);
+  }
+}
+
+function rebuildSimulation(nextRules = rules){
+  rules = nextRules;
+  const fps = store.get().sim.fps;
+  sim = new Simulator(grid, nextRules);
+  player?.pause?.();
+  player = new Player(sim, onUpdate);
+  player.setFPS(fps);
+  player.reset();
+  updateSim({ running: false });
+  cursor = createCursor();
+  draw();
+}
+
+function updateRules(patch){
+  const next = { ...store.get().rules, ...patch };
+  store.set({ rules: next });
+  rebuildSimulation(next);
+}
+
+function showNoPathToast(){
+  if (!noPathToast) return;
+  noPathToast.hidden = false;
+  noPathToast.classList.add('visible');
+}
+
+function hideNoPathToast(){
+  if (!noPathToast) return;
+  noPathToast.classList.remove('visible');
+  noPathToast.hidden = true;
+}
+
+function renderNoPathToast(results){
+  if (!noPathToast || !noPathToastTitle || !noPathToastMsg || !noPathToastActions) return;
+  const hasSuccess = results.some(r => r.success);
+  noPathToast.classList.toggle('toast--success', hasSuccess);
+  noPathToast.classList.toggle('toast--warn', !hasSuccess);
+  noPathToastTitle.textContent = hasSuccess ? '길이 막혔어요.' : '아직 막혀 있어요.';
+  noPathToastMsg.textContent = hasSuccess ? '아래 중 하나를 바꾸면 도달할 수 있어요!' : '벽을 조금 지우거나, 시작/목표 위치를 바꿔 보세요.';
+  noPathToastActions.innerHTML = '';
+  results.forEach((opt, index) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'toast__action';
+    if (opt.success) btn.classList.add('toast__action--success');
+    if (!opt.changed){
+      btn.disabled = true;
+      btn.classList.add('toast__action--disabled');
+    }
+    btn.textContent = opt.changed ? opt.label : `${opt.label} (현재)`;
+    btn.dataset.index = String(index);
+    btn.addEventListener('click', () => applyNoPathSuggestion(opt));
+    noPathToastActions.appendChild(btn);
+  });
+}
+
+function applyNoPathSuggestion(option){
+  if (!option || !option.patch) return;
+  hideNoPathToast();
+  dismissedNoPathSignature = null;
+  displayedNoPathSignature = null;
+  const patch = option.patch;
+  if (Object.prototype.hasOwnProperty.call(patch, 'allowDiagonal')){
+    allowDiagonal.checked = patch.allowDiagonal;
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'useWeights')){
+    useWeights.checked = patch.useWeights;
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'algorithm')){
+    algoSelect.value = patch.algorithm;
+  }
+  updateRules(patch);
+  player.play();
+  updateSim({ running: true });
+}
+
+function makeNoPathSignature(){
+  return [
+    grid.cols,
+    grid.rows,
+    grid.cells.join(','),
+    grid.start.x, grid.start.y,
+    grid.goal.x, grid.goal.y,
+    rules.algorithm,
+    rules.allowDiagonal ? '1' : '0',
+    rules.useWeights ? '1' : '0',
+  ].join('|');
+}
+
+function clearNoPathUi(){
+  noPathOverlay = null;
+  whatIfResults = [];
+  latestNoPathSignature = null;
+  displayedNoPathSignature = null;
+  dismissedNoPathSignature = null;
+  hideNoPathToast();
+  if (noPathHelpBtn) noPathHelpBtn.disabled = true;
+}
+
+function snapshotCurrentSetup(){
+  const base = { version: 1, ...grid.toJSON() };
+  base.cells = base.cells.slice();
+  return {
+    grid: base,
+    rules: {
+      algorithm: rules.algorithm,
+      allowDiagonal: !!rules.allowDiagonal,
+      useWeights: !!rules.useWeights,
+    },
+  };
+}
+
+function applyRulesConfig(config){
+  if (!config) return;
+  const patch = {};
+  if (Object.prototype.hasOwnProperty.call(config, 'algorithm')){
+    algoSelect.value = config.algorithm;
+    patch.algorithm = config.algorithm;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, 'allowDiagonal')){
+    allowDiagonal.checked = config.allowDiagonal;
+    patch.allowDiagonal = config.allowDiagonal;
+  }
+  if (Object.prototype.hasOwnProperty.call(config, 'useWeights')){
+    useWeights.checked = config.useWeights;
+    patch.useWeights = config.useWeights;
+  }
+  if (Object.keys(patch).length){
+    updateRules(patch);
+  }
+}
+
+function updateTutorialUi(step){
+  if (!step) return;
+  if (tutorialTitle) tutorialTitle.textContent = step.title;
+  if (tutorialBody) tutorialBody.textContent = step.description;
+  if (tutorialBulletList){
+    tutorialBulletList.innerHTML = '';
+    step.bullets?.forEach(text => {
+      const li = document.createElement('li');
+      li.textContent = text;
+      tutorialBulletList.appendChild(li);
+    });
+  }
+  if (tutorialProgress){
+    tutorialProgress.textContent = `${tutorialState.index + 1} / ${TUTORIAL_STEPS.length}`;
+  }
+  if (tutorialPrev) tutorialPrev.disabled = tutorialState.index === 0;
+  if (tutorialNext){
+    tutorialNext.textContent = tutorialState.index === TUTORIAL_STEPS.length - 1 ? '완료' : '다음 단계';
+  }
+}
+
+function loadTutorialStep(index){
+  const step = TUTORIAL_STEPS[index];
+  if (!step) return;
+  tutorialState.index = index;
+  const newGrid = gridFromJson(step.level);
+  resetForNewGrid(newGrid);
+  applyRulesConfig(step.rules);
+  updateTutorialUi(step);
+}
+
+function openTutorialModal(){
+  if (!tutorialModal) return;
+  tutorialModal.hidden = false;
+  tutorialModal.classList.add('open');
+}
+
+function closeTutorialModal(restore = true){
+  if (!tutorialModal) return;
+  tutorialModal.classList.remove('open');
+  tutorialModal.hidden = true;
+  if (restore && tutorialState.saved){
+    const restoredGrid = gridFromJson(tutorialState.saved.grid);
+    resetForNewGrid(restoredGrid);
+    applyRulesConfig(tutorialState.saved.rules);
+  }
+  tutorialState = { active: false, index: 0, saved: null };
+}
+
+function startTutorial(){
+  if (!tutorialModal) return;
+  tutorialState = { active: true, index: 0, saved: snapshotCurrentSetup() };
+  loadTutorialStep(0);
+  openTutorialModal();
+}
+
+function tutorialNextStep(){
+  if (!tutorialState.active) return;
+  if (tutorialState.index >= TUTORIAL_STEPS.length - 1){
+    closeTutorialModal(true);
+    return;
+  }
+  loadTutorialStep(tutorialState.index + 1);
+}
+
+function tutorialPrevStep(){
+  if (!tutorialState.active) return;
+  if (tutorialState.index === 0) return;
+  loadTutorialStep(tutorialState.index - 1);
+}
+
+function initOnboarding(){
+  if (!onboardingOverlay) return;
+  const dismissed = localStorage.getItem('onboardingDismissed') === 'true';
+  if (dismissed) return;
+  onboardingOverlay.hidden = false;
+  onboardingOverlay.classList.add('visible');
+}
+
+function closeOnboarding(){
+  if (!onboardingOverlay) return;
+  if (onboardingSkip?.checked){
+    try {
+      localStorage.setItem('onboardingDismissed', 'true');
+    } catch (err){
+      console.warn('Failed to persist onboarding dismissal', err);
+    }
+  }
+  onboardingOverlay.classList.remove('visible');
+  onboardingOverlay.hidden = true;
 }
 
 function downloadLevelJson(){
-  const json = serializeGrid();
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+  const { url, filename, revoke, json } = exportLevel(grid);
   const a = document.createElement('a');
   a.href = url;
-  const timestamp = new Date().toISOString().replace(/[:T]/g,'-').split('.')[0];
-  a.download = `level-${timestamp}.json`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => revoke(), 0);
   if (levelJsonInput){
     levelJsonInput.value = json;
   }
-  stMsg.textContent = 'JSON을 다운로드했습니다.';
+  setIoMessage('레벨을 저장했어요.');
 }
 
 async function copyLevelJson(){
-  const json = serializeGrid();
+  const { json } = exportLevel(grid);
   if (navigator.clipboard?.writeText){
     try {
       await navigator.clipboard.writeText(json);
-      stMsg.textContent = '클립보드에 JSON을 복사했습니다.';
+      setIoMessage('클립보드에 JSON을 복사했어요.');
     } catch (err){
-      stMsg.textContent = '복사에 실패했습니다: ' + err.message;
+      setIoMessage('복사에 실패했어요: ' + err.message, true);
     }
-  } else {
+  } else if (levelJsonInput){
     levelJsonInput.value = json;
-    stMsg.textContent = '복사 기능을 지원하지 않아 텍스트 영역에 채워졌습니다.';
+    setIoMessage('복사 기능이 없어 텍스트 영역에 넣어뒀어요.');
   }
-  if (levelJsonInput){
+  if (levelJsonInput && !levelJsonInput.value){
     levelJsonInput.value = json;
   }
 }
 
-function parseLevelJson(jsonText){
-  let raw;
-  try {
-    raw = JSON.parse(jsonText);
-  } catch (err){
-    throw new Error('JSON 구문을 확인하세요. (' + err.message + ')');
+function importLevelObject(obj){
+  const { ok, errors, warnings } = validateLevelJson(obj);
+  if (!ok){
+    setIoMessage(errors.join(' / '), true);
+    return;
   }
-  if (!raw || typeof raw !== 'object') throw new Error('객체 형태의 JSON이 필요합니다.');
-  const { cols, rows, cells, start, goal } = raw;
-  if (!Number.isInteger(cols) || cols <= 0) throw new Error('cols 값이 올바르지 않습니다.');
-  if (!Number.isInteger(rows) || rows <= 0) throw new Error('rows 값이 올바르지 않습니다.');
-  if (!Array.isArray(cells) || cells.length !== cols * rows) throw new Error('cells 배열 길이가 cols*rows와 일치해야 합니다.');
-  if (!cells.every(v => Number.isInteger(v) && v >= 0 && v <= 5)) throw new Error('cells 값은 0~5 사이의 정수여야 합니다.');
-  if (!start || !Number.isInteger(start.x) || !Number.isInteger(start.y)) throw new Error('start 좌표가 없습니다.');
-  if (!goal || !Number.isInteger(goal.x) || !Number.isInteger(goal.y)) throw new Error('goal 좌표가 없습니다.');
-  if (start.x < 0 || start.x >= cols || start.y < 0 || start.y >= rows) throw new Error('start 좌표가 격자 범위를 벗어났습니다.');
-  if (goal.x < 0 || goal.x >= cols || goal.y < 0 || goal.y >= rows) throw new Error('goal 좌표가 격자 범위를 벗어났습니다.');
-  return raw;
-}
-
-function importLevelFromJson(jsonText){
   try {
-    const parsed = parseLevelJson(jsonText);
-    const newGrid = Grid.fromJSON(parsed);
+    const newGrid = gridFromJson(obj);
     resetForNewGrid(newGrid);
-    stMsg.textContent = 'JSON 레벨을 불러왔습니다.';
+    if (warnings.length){
+      setIoMessage('불러왔지만 주의: ' + warnings.join(' / '));
+    } else {
+      setIoMessage('레벨을 불러왔어요.');
+    }
   } catch (err){
-    stMsg.textContent = '불러오기 실패: ' + err.message;
+    setIoMessage('레벨을 불러오지 못했어요: ' + err.message, true);
   }
+}
+
+function importLevelFromText(text){
+  if (!text){
+    setIoMessage('불러올 JSON 텍스트가 없어요.', true);
+    return;
+  }
+  let obj;
+  try {
+    obj = JSON.parse(text);
+  } catch (err){
+    setIoMessage('JSON 파싱 오류: ' + err.message, true);
+    return;
+  }
+  importLevelObject(obj);
 }
 
 function setBrushByIndex(idx){
@@ -306,15 +654,25 @@ function handlePaint(e){
 }
 
 // UI 바인딩
-algoSelect.addEventListener('change', e => rules.algorithm = e.target.value);
-allowDiagonal.addEventListener('change', e => rules.allowDiagonal = e.target.checked);
-useWeights.addEventListener('change', e => rules.useWeights = e.target.checked);
+algoSelect.addEventListener('change', e => updateRules({ algorithm: e.target.value }));
+allowDiagonal.addEventListener('change', e => updateRules({ allowDiagonal: e.target.checked }));
+useWeights.addEventListener('change', e => updateRules({ useWeights: e.target.checked }));
 
-playBtn.addEventListener('click', ()=> player.play());
-pauseBtn.addEventListener('click', ()=> player.pause());
-stepBtn.addEventListener('click', ()=> player.step());
+playBtn.addEventListener('click', ()=>{
+  player.play();
+  updateSim({ running: true });
+});
+pauseBtn.addEventListener('click', ()=>{
+  player.pause();
+  updateSim({ running: false });
+});
+stepBtn.addEventListener('click', ()=>{
+  player.step();
+  updateSim({ running: false });
+});
 resetBtn.addEventListener('click', ()=> {
   player.reset();
+  updateSim({ running: false });
   cursor = createCursor();
   draw();
 });
@@ -322,7 +680,7 @@ resetBtn.addEventListener('click', ()=> {
 speedRange.addEventListener('input', e => {
   const v = +e.target.value;
   speedVal.textContent = v;
-  player.setFPS(v);
+  updateSim({ fps: v });
 });
 
 showVisited.addEventListener('change', draw);
@@ -373,6 +731,7 @@ randomMapBtn.addEventListener('click', ()=>{
   randomWalls(grid, 0.28);
   ensureStartGoal();
   player.reset();
+  updateSim({ running: false });
   cursor = createCursor();
   draw();
 });
@@ -386,6 +745,7 @@ clearMapBtn.addEventListener('click', ()=>{
   grid.set(1,1, Cell.START);
   grid.set(grid.cols-2, grid.rows-2, Cell.GOAL);
   player.reset();
+  updateSim({ running: false });
   cursor = createCursor();
   draw();
 });
@@ -397,30 +757,61 @@ importLevelInput.addEventListener('change', e => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    importLevelFromJson(String(reader.result));
+    importLevelFromText(String(reader.result));
     importLevelInput.value = '';
   };
   reader.onerror = () => {
-    stMsg.textContent = '파일을 읽지 못했습니다.';
+    setIoMessage('파일을 읽지 못했어요.', true);
   };
   reader.readAsText(file);
 });
 
 applyLevelJsonBtn.addEventListener('click', ()=>{
   const text = levelJsonInput.value.trim();
-  if (!text){
-    stMsg.textContent = '적용할 JSON 텍스트가 없습니다.';
-    return;
-  }
-  importLevelFromJson(text);
+  importLevelFromText(text);
 });
 
 clearJsonInputBtn.addEventListener('click', ()=>{
   levelJsonInput.value = '';
-  stMsg.textContent = '입력창을 비웠습니다.';
+  setIoMessage('입력창을 비웠어요.');
+});
+
+noPathToastClose?.addEventListener('click', () => {
+  hideNoPathToast();
+  if (latestNoPathSignature){
+    dismissedNoPathSignature = latestNoPathSignature;
+  }
+  displayedNoPathSignature = null;
+});
+
+noPathHelpBtn?.addEventListener('click', () => {
+  if (!whatIfResults.length) return;
+  renderNoPathToast(whatIfResults);
+  showNoPathToast();
+  if (latestNoPathSignature){
+    displayedNoPathSignature = latestNoPathSignature;
+  }
+});
+
+tutorialStartBtn?.addEventListener('click', startTutorial);
+tutorialClose?.addEventListener('click', () => closeTutorialModal(true));
+tutorialPrev?.addEventListener('click', () => tutorialPrevStep());
+tutorialNext?.addEventListener('click', () => tutorialNextStep());
+tutorialModal?.addEventListener('click', event => {
+  if (event.target === tutorialModal){
+    closeTutorialModal(true);
+  }
+});
+
+onboardingClose?.addEventListener('click', closeOnboarding);
+onboardingOverlay?.addEventListener('click', event => {
+  if (event.target === onboardingOverlay){
+    closeOnboarding();
+  }
 });
 
 // 초기 그리기
 window.addEventListener('resize', ()=> { renderer.resizeToFit(); draw(); });
 window.addEventListener('keydown', handleKeyDown);
+initOnboarding();
 draw();

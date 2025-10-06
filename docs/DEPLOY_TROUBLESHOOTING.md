@@ -18,7 +18,17 @@ Railway에서 자동 감지(Launchpad/Railpack)로 배포 시 다음 오류가 �
 
 ### 2) Docker 배포 유지
 - 이미 포함된 `Dockerfile`을 선택해 배포하거나, Railway에서 Docker 모드를 사용해 빌드.
-- Start Command는 비워 두고, Railway가 컨테이너 Entrypoint를 그대로 실행하도록 설정.
+- Start Command는 **비워 두고**, Railway가 컨테이너 Entrypoint(`/docker-entrypoint.sh`)를 그대로 실행하도록 설정.
+
+### Docker 배포 시 `npm could not be found`
+- 증상: Docker 모드에서 컨테이너 실행 시 `The executable npm could not be found.` 로그가 출력되며 종료.
+- 원인: 서비스 Start Command가 `npm start`로 남아 있어 Nginx 기반 컨테이너에서 존재하지 않는 `npm`을 실행하려고 함.
+- 해결: Railway → Settings → Start Command 값을 비우거나 컨테이너 기본값으로 되돌립니다.
+
+### Docker 배포 후 접속 링크가 보이지 않는 경우
+- 증상: 컨테이너는 정상 기동(nginx 로그 출력)했지만 Railway 대시보드에 “Open App” 링크가 표시되지 않음.
+- 원인: Docker 서비스는 자동으로 HTTP 포트를 노출하지 않습니다.
+- 해결: Service → **Networking** → **Domains**에서 `Expose Port`를 8080으로 추가하거나 기본 도메인을 생성합니다. 도메인이 연결되면 `https://<서비스명>.up.railway.app` 형태의 링크가 활성화됩니다.
 
 ## 체크리스트
 - [ ] Railway → Settings → Start Command가 `npm start`인지 확인(이전 `start.sh` 값 제거).
