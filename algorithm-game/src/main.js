@@ -55,6 +55,7 @@ const noPathToastActions = el('#noPathToastActions');
 const noPathToastClose = el('#noPathToastClose');
 const noPathHelpBtn = el('#noPathHelpBtn');
 if (noPathHelpBtn) noPathHelpBtn.disabled = true;
+if (noPathToast) noPathToast.dataset.autoshow = '0';
 const tutorialModal = el('#tutorialModal');
 const tutorialTitle = el('#tutorialTitle');
 const tutorialBody = el('#tutorialBody');
@@ -98,6 +99,9 @@ let latestNoPathSignature = null;
 let displayedNoPathSignature = null;
 let dismissedNoPathSignature = null;
 let tutorialState = { active: false, index: 0, saved: null };
+const NO_PATH_TOAST_TIMEOUT = 6500;
+let noPathToastTimer = null;
+let lastAppliedSuggestion = null;
 
 populateSamples();
 
@@ -148,7 +152,7 @@ function updateNoPathHints(state){
   latestNoPathSignature = signature;
   renderNoPathToast(whatIfResults);
   if (signature !== displayedNoPathSignature && signature !== dismissedNoPathSignature){
-    showNoPathToast();
+    showNoPathToast(true);
     displayedNoPathSignature = signature;
   }
 }
@@ -359,18 +363,54 @@ function updateRules(patch){
   const next = { ...store.get().rules, ...patch };
   store.set({ rules: next });
   rebuildSimulation(next);
+  if (lastAppliedSuggestion && !rulesMatchPatch(next, lastAppliedSuggestion)){
+    lastAppliedSuggestion = null;
+  }
 }
 
-function showNoPathToast(){
+function showNoPathToast(autoShow=false){
   if (!noPathToast) return;
   noPathToast.hidden = false;
   noPathToast.classList.add('visible');
+  noPathToast.dataset.autoshow = autoShow ? '1' : '0';
+  clearNoPathToastTimer();
+  if (autoShow) startNoPathToastTimer();
 }
 
 function hideNoPathToast(){
   if (!noPathToast) return;
   noPathToast.classList.remove('visible');
   noPathToast.hidden = true;
+  clearNoPathToastTimer();
+  noPathToast.dataset.autoshow = '0';
+}
+
+function startNoPathToastTimer(){
+  clearNoPathToastTimer();
+  noPathToastTimer = window.setTimeout(() => {
+    hideNoPathToast();
+  }, NO_PATH_TOAST_TIMEOUT);
+}
+
+function clearNoPathToastTimer(){
+  if (noPathToastTimer){
+    clearTimeout(noPathToastTimer);
+    noPathToastTimer = null;
+  }
+}
+
+function rulesMatchPatch(rulesState, patch){
+  if (!patch) return false;
+  return Object.keys(patch).every(key => rulesState[key] === patch[key]);
+}
+
+function patchesEqual(a, b){
+  if (!a || !b) return false;
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const key of keys){
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
 }
 
 function renderNoPathToast(results){
@@ -381,16 +421,31 @@ function renderNoPathToast(results){
   noPathToastTitle.textContent = hasSuccess ? '길이 막혔어요.' : '아직 막혀 있어요.';
   noPathToastMsg.textContent = hasSuccess ? '아래 중 하나를 바꾸면 도달할 수 있어요!' : '벽을 조금 지우거나, 시작/목표 위치를 바꿔 보세요.';
   noPathToastActions.innerHTML = '';
+  const currentRules = store.get().rules;
   results.forEach((opt, index) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'toast__action';
     if (opt.success) btn.classList.add('toast__action--success');
+    const isActive = rulesMatchPatch(currentRules, opt.patch);
+    const isLastApplied = lastAppliedSuggestion && patchesEqual(lastAppliedSuggestion, opt.patch);
     if (!opt.changed){
       btn.disabled = true;
       btn.classList.add('toast__action--disabled');
     }
-    btn.textContent = opt.changed ? opt.label : `${opt.label} (현재)`;
+    if (isActive){
+      btn.classList.add('toast__action--applied');
+    }
+    if (isLastApplied){
+      btn.dataset.lastApplied = 'true';
+    }
+    if (isActive){
+      btn.textContent = `${opt.label} (적용됨)`;
+    } else if (!opt.changed){
+      btn.textContent = `${opt.label} (현재)`;
+    } else {
+      btn.textContent = opt.label;
+    }
     btn.dataset.index = String(index);
     btn.addEventListener('click', () => applyNoPathSuggestion(opt));
     noPathToastActions.appendChild(btn);
@@ -413,6 +468,7 @@ function applyNoPathSuggestion(option){
     algoSelect.value = patch.algorithm;
   }
   updateRules(patch);
+  lastAppliedSuggestion = { ...patch };
   player.play();
   updateSim({ running: true });
 }
@@ -436,6 +492,7 @@ function clearNoPathUi(){
   latestNoPathSignature = null;
   displayedNoPathSignature = null;
   dismissedNoPathSignature = null;
+  lastAppliedSuggestion = null;
   hideNoPathToast();
   if (noPathHelpBtn) noPathHelpBtn.disabled = true;
 }
@@ -787,9 +844,25 @@ noPathToastClose?.addEventListener('click', () => {
 noPathHelpBtn?.addEventListener('click', () => {
   if (!whatIfResults.length) return;
   renderNoPathToast(whatIfResults);
-  showNoPathToast();
+  showNoPathToast(false);
   if (latestNoPathSignature){
     displayedNoPathSignature = latestNoPathSignature;
+  }
+});
+
+noPathToast?.addEventListener('mouseenter', clearNoPathToastTimer);
+noPathToast?.addEventListener('focusin', clearNoPathToastTimer);
+noPathToast?.addEventListener('mouseleave', () => {
+  if (!noPathToast.hidden && noPathToast.dataset.autoshow === '1'){
+    startNoPathToastTimer();
+  }
+});
+noPathToast?.addEventListener('focusout', () => {
+  if (!noPathToast.hidden && noPathToast.dataset.autoshow === '1'){
+    const active = document.activeElement;
+    if (!noPathToast.contains(active)){
+      startNoPathToastTimer();
+    }
   }
 });
 

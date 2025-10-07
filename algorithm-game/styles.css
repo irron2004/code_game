@@ -92,6 +92,7 @@ footer{color:var(--muted); border-top:1px solid var(--line)}
 .toast__action:hover{border-color:var(--accent);}
 .toast__action--success{background:var(--start); border-color:var(--start); color:#fff;}
 .toast__action--disabled{opacity:0.6; cursor:not-allowed;}
+.toast__action--applied{border-color:var(--accent); background:rgba(63,140,255,0.12); color:var(--accent); opacity:1;}
 .toast__close{background:none; border:none; color:var(--muted); font-size:20px; line-height:1; cursor:pointer; padding:0;}
 .toast--success{border-left-color:var(--start);}
 .toast--warn{border-left-color:var(--goal);}
