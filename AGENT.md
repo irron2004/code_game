@@ -13,12 +13,13 @@ algorithm-game/
 ├─ index.html
 ├─ styles.css
 └─ src/
-   ├─ main.js         # 앱 조립/이벤트
-   ├─ renderer.js     # 캔버스 렌더
-   ├─ grid.js         # 그리드/타일/이웃/휴리스틱
-   ├─ algorithms.js   # BFS, Dijkstra, A* (제너레이터)
-   ├─ simulator.js    # 스텝/재생 제어
-   └─ levels.js       # 샘플/랜덤 맵
+├─ main.js         # 앱 조립/이벤트
+├─ renderer.js     # 캔버스 렌더
+├─ grid.js         # 그리드/타일/이웃/휴리스틱
+├─ algorithms.js   # BFS, Dijkstra, A* (제너레이터)
+├─ simulator.js    # 스텝/재생 제어
+└─ levels.js       # 샘플/랜덤 맵
+
 ```
 
 ## 공통 원칙
@@ -60,8 +61,3 @@ algorithm-game/
 - 자동/명시적 **오류 메시지** 제공.
 - 단위 테스트 통과(도입 이후).
 - 문서 최신화.
-
-## 로컬 실행 & 테스트
-- 실행: `index.html`을 브라우저로 열기
-- 정적 서버(선택): `python -m http.server` 또는 VSCode Live Server
-- (권장) 테스트 도입: Vitest(+jsdom)

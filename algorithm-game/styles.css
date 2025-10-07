@@ -169,3 +169,10 @@ footer{color:var(--muted); border-top:1px solid var(--line)}
 .onboarding__list li{display:flex; align-items:center; gap:12px;}
 .onboarding__checkbox{font-size:13px; color:var(--muted); display:flex; align-items:center; gap:6px;}
 kbd{background:#f1f4fb; border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-size:13px; font-family:'JetBrains Mono','SFMono-Regular',monospace;}
+
+@media (max-width:768px){
+  main{flex-direction:column;}
+  .left{width:100%;}
+  .right{align-items:stretch;}
+  .right canvas#game{width:100%; max-width:100%;}
+}

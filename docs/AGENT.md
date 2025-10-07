@@ -5,25 +5,22 @@
 - 이름: Algorithm Learning Game
 - 목적: 유·초등 학생이 **길 찾기/최단경로** 알고리즘을 게임처럼 학습
 - 형태: **순수 웹(ES Modules)** — 빌드 없이 `index.html` 실행
-- 현재 기능: BFS/Dijkstra/A* 시뮬레이션, 격자 편집, 규칙 토글(대각선/가중치), 시각화, JSON 내보내기/불러오기, 키보드 커서 조작
+- 현재 기능: BFS/Dijkstra/A* 시뮬레이션, 격자 편집, 규칙 토글(대각선/가중치), 시각화
 
 ## 코드 구조(요약)
 ```
-.
-├─ algorithm-game/
-│  ├─ index.html
-│  ├─ styles.css
-│  └─ src/
-│     ├─ main.js         # 앱 조립/이벤트
-│     ├─ renderer.js     # 캔버스 렌더
-│     ├─ grid.js         # 그리드/타일/이웃/휴리스틱
-│     ├─ algorithms.js   # BFS, Dijkstra, A* (제너레이터)
-│     ├─ simulator.js    # 스텝/재생 제어
-│     ├─ levels.js       # 샘플/랜덤 맵
-│     └─ __tests__/      # Vitest 스펙(grid, algorithms)
-├─ server.js              # Express 정적 서버 (Railway/로컬 실행)
-├─ package.json           # npm scripts (start/test) 및 의존성
-└─ docs/                  # 기획/UX/QA/보안/배포 문서
+
+algorithm-game/
+├─ index.html
+├─ styles.css
+└─ src/
+├─ main.js         # 앱 조립/이벤트
+├─ renderer.js     # 캔버스 렌더
+├─ grid.js         # 그리드/타일/이웃/휴리스틱
+├─ algorithms.js   # BFS, Dijkstra, A* (제너레이터)
+├─ simulator.js    # 스텝/재생 제어
+└─ levels.js       # 샘플/랜덤 맵
+
 ```
 
 ## 공통 원칙
@@ -40,15 +37,15 @@
 
 ## 스프린트 계획(초기 2주)
 **스프린트 1**
-- [x] 레벨 **내보내기/불러오기(JSON)** UI
+- [ ] 레벨 **내보내기/불러오기(JSON)** UI
 - [ ] **경로 없음** 진단(막힌 벽 스트립 강조)
-- [x] 키보드 숏컷(재생/정지 토글, N=한 스텝, R=리셋, 1~6=브러시, 스페이스=브러시 적용)
+- [ ] 키보드 숏컷(공백=재생/정지, N=한 스텝, R=리셋, 1~6=브러시)
 - [ ] 반응형 리사이즈 안정화
 
 **스프린트 2**
 - [ ] 튜토리얼 모달(3단계)
 - [ ] 접근성 라벨/포커스 순서
-- [x] 단위 테스트(Vitest) 도입
+- [ ] 단위 테스트(Vitest) 도입
 
 ## 커밋/브랜치
 - 브랜치: `feat/*`, `fix/*`, `docs/*`
@@ -65,15 +62,3 @@
 - 자동/명시적 **오류 메시지** 제공.
 - 단위 테스트 통과(도입 이후).
 - 문서 최신화.
-
-## 배포 메모
-- Railway Node 모드: Start Command를 `npm start`로 설정합니다 (`server.js`가 Express 정적 서버 제공).
-- Railway Docker 모드: Start Command를 비워 두고 컨테이너 EntryPoint(`/docker-entrypoint.sh`)를 그대로 사용합니다. `npm start`가 남아 있으면 `The executable npm could not be found.` 오류가 발생합니다.
-- Docker 모드에서는 Service → Networking → Domains에서 포트 8080을 노출해야 기본 도메인이 생성됩니다.
-- 빌드/런타임 오류(`start.sh not found`, `could not determine build`, `npm could not be found`)는 `docs/DEPLOY_TROUBLESHOOTING.md`에서 원인과 조치를 확인하세요.
-- Docker 배포 또한 가능하며, `Dockerfile`은 Nginx로 `algorithm-game/`을 서빙하도록 구성되어 있습니다.
-
-## 로컬 실행 & 테스트
-- 실행(권장): `npm install && npm start` — Express 서버가 `algorithm-game/`을 서빙하며 `PORT`를 사용합니다.
-- 정적 서버(선택): `python -m http.server` 또는 VSCode Live Server로 `algorithm-game/`만 서빙.
-- 단위 테스트: `npm install && npm test` (Vitest)

@@ -139,9 +139,9 @@
     <small>© 2025 Algorithm Learning Game – MIT License. 교육·프로토타입용.</small>
   </footer>
 
-  <div id="onboardingOverlay" class="onboarding" role="dialog" aria-modal="true" hidden>
+  <div id="onboardingOverlay" class="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle" hidden>
     <div class="onboarding__content">
-      <h2>빠른 조작 안내</h2>
+      <h2 id="onboardingTitle">빠른 조작 안내</h2>
       <ul class="onboarding__list">
         <li><kbd>Space</kbd> 재생/멈춤</li>
         <li><kbd>N</kbd> 한 스텝 실행</li>
@@ -155,7 +155,7 @@
     </div>
   </div>
 
-  <div id="tutorialModal" class="modal" role="dialog" aria-modal="true" hidden>
+  <div id="tutorialModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle" hidden>
     <div class="modal__content">
       <div class="modal__header">
         <h2 id="tutorialTitle"></h2>

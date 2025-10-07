@@ -1,4 +1,3 @@
-
 ---
 name: Bug report
 about: 문제를 알려주세요

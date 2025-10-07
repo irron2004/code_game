@@ -1,4 +1,3 @@
-
 # 아키텍처 개요
 
 ## 모듈
@@ -9,7 +8,7 @@
 - main.js: UI 바인딩, 규칙 Proxy(변경 시 시뮬 재구성)
 - levels.js: 샘플 생성, 랜덤 벽
 
-## 상태 흐름
+## 상태 흐름(요약)
 UI → rules 변경 → Simulator 재생성 → Player.play(step 호출 루프)
 → algorithms.* 제너레이터가 `{visited, frontier, current, path}` 상태 yield
 → renderer.draw(state, options) → 상태 패널 갱신
