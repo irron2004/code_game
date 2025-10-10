@@ -1,5 +1,5 @@
 // main.js
-import { Grid, Cell } from './grid.js';
+import { Grid, Cell, keyOf } from './grid.js';
 import { Renderer } from './renderer.js';
 import { Simulator, Player } from './simulator.js';
 import { SAMPLE_LEVELS, randomWalls } from './levels.js';
@@ -7,6 +7,16 @@ import { exportLevel, gridFromJson, validateLevelJson } from './level_io.js';
 import { analyzeNoPath, tryWhatIf } from './no_path_advice.js';
 import { TUTORIAL_STEPS } from './tutorial.js';
 import { createStore } from './store.js';
+import {
+  logRuleToggle,
+  logLevelLoaded,
+  logLevelSaved,
+  logAlgoRun,
+  logAlgoRunResult,
+  logNoPathDetected,
+  subscribeAnalytics,
+} from './analytics.js';
+import { createTelemetryFromMeta } from './telemetry.js';
 
 const el = (sel) => document.querySelector(sel);
 const els = (sel) => Array.from(document.querySelectorAll(sel));
@@ -34,6 +44,29 @@ function focusElement(node){
 function captureActiveElement(){
   const active = document.activeElement;
   return active && typeof active.focus === 'function' ? active : null;
+}
+
+function metaContent(name){
+  if (typeof document === 'undefined') return '';
+  const tag = document.querySelector(`meta[name="${name}"]`);
+  return tag?.content ?? '';
+}
+
+function initTelemetryBridge(){
+  if (typeof window !== 'undefined' && window.__TELEMETRY_DISABLED__) return null;
+  try {
+    const telemetry = createTelemetryFromMeta({
+      endpoint: metaContent('telemetry:endpoint') || undefined,
+      tokenEndpoint: metaContent('telemetry:token') || undefined,
+      version: metaContent('app:version') || '0.1.0',
+      env: metaContent('app:env') || undefined,
+    });
+    subscribeAnalytics((entry) => telemetry.trackEntry(entry));
+    return telemetry;
+  } catch (err){
+    console.warn('[telemetry] disabled', err);
+    return null;
+  }
 }
 
 let activeFocusTrap = null;
@@ -171,12 +204,16 @@ let whatIfResults = [];
 let latestNoPathSignature = null;
 let displayedNoPathSignature = null;
 let dismissedNoPathSignature = null;
+let loggedNoPathSignature = null;
 let tutorialState = { active: false, index: 0, saved: null };
 const NO_PATH_TOAST_TIMEOUT = 6500;
 let noPathToastTimer = null;
 let lastAppliedSuggestion = null;
 let tutorialPreviouslyFocused = null;
 let onboardingPreviouslyFocused = null;
+let currentRunContext = null;
+
+initTelemetryBridge();
 
 populateSamples();
 
@@ -197,6 +234,9 @@ function onUpdate(state){
   updateNoPathHints(state);
   draw();
   updateStatus(state);
+  if (sim.done && state){
+    logRunCompletion(state);
+  }
 }
 
 function updateNoPathHints(state){
@@ -210,6 +250,7 @@ function updateNoPathHints(state){
     hideNoPathToast();
     latestNoPathSignature = null;
     displayedNoPathSignature = null;
+    loggedNoPathSignature = null;
     if (noPathHelpBtn) noPathHelpBtn.disabled = true;
     return;
   }
@@ -226,6 +267,12 @@ function updateNoPathHints(state){
   }
   latestNoPathSignature = signature;
   renderNoPathToast(whatIfResults);
+  if (signature !== loggedNoPathSignature){
+    const blockedCells = noPathOverlay?.boundary?.size ?? 0;
+    const unreachable = noPathOverlay?.unreachable?.size ?? 0;
+    logNoPathDetected({ blockedCells, unreachable });
+    loggedNoPathSignature = signature;
+  }
   if (signature !== displayedNoPathSignature && signature !== dismissedNoPathSignature){
     showNoPathToast(true);
     displayedNoPathSignature = signature;
@@ -281,6 +328,7 @@ function applyBrush(pos, brush, options={}){
     ensureStartGoal();
     player.reset();
     updateSim({ running: false });
+    resetRunContext();
     draw();
     return;
   }
@@ -300,6 +348,7 @@ function applyBrush(pos, brush, options={}){
   ensureStartGoal();
   player.reset();
   updateSim({ running: false });
+  resetRunContext();
   draw();
 }
 
@@ -308,6 +357,7 @@ function togglePlay(){
     player.pause();
     updateSim({ running: false });
   } else {
+    ensureRunStarted('keyboard_toggle');
     player.play();
     updateSim({ running: true });
   }
@@ -369,6 +419,7 @@ function handleKeyDown(e){
       break;
     case 'n':
       e.preventDefault();
+      ensureRunStarted('keyboard_step');
       player.step();
       updateSim({ running: false });
       break;
@@ -377,6 +428,7 @@ function handleKeyDown(e){
       player.reset();
       updateSim({ running: false });
       cursor = createCursor();
+      resetRunContext();
       draw();
       break;
     case '1': case '2': case '3': case '4': case '5': case '6':
@@ -390,7 +442,7 @@ function createCursor(){
   return { x: grid.start.x, y: grid.start.y };
 }
 
-function resetForNewGrid(newGrid){
+function resetForNewGrid(newGrid, options = {}){
   clearNoPathUi();
   grid = newGrid;
   renderer = new Renderer(canvas, grid);
@@ -402,7 +454,13 @@ function resetForNewGrid(newGrid){
   player.reset();
   updateSim({ running: false });
   cursor = createCursor();
+  resetRunContext();
   draw();
+  logLevelLoaded({
+    cols: grid.cols,
+    rows: grid.rows,
+    source: options.source,
+  });
 }
 
 function setIoMessage(text, isError=false){
@@ -421,6 +479,72 @@ function updateSim(partial){
   }
 }
 
+function makeRunId(){
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'){
+    return crypto.randomUUID();
+  }
+  return `run_${Math.random().toString(36).slice(2)}`;
+}
+
+function ensureRunStarted(trigger){
+  if (sim.done){
+    currentRunContext = null;
+  }
+  if (currentRunContext && !currentRunContext.logged){
+    if (trigger && !currentRunContext.trigger){
+      currentRunContext.trigger = trigger;
+    }
+    return;
+  }
+  currentRunContext = {
+    id: makeRunId(),
+    trigger,
+    startedAt: Date.now(),
+    logged: false,
+  };
+  logAlgoRun({
+    algorithm: rules.algorithm,
+    allowDiagonal: !!rules.allowDiagonal,
+    useWeights: !!rules.useWeights,
+    trigger,
+  });
+}
+
+function logRunCompletion(state){
+  if (!currentRunContext || currentRunContext.logged) return;
+  const durationMs = Math.max(0, Date.now() - currentRunContext.startedAt);
+  const pathLength = state?.path?.length ?? 0;
+  const visitedCount = state?.visited instanceof Set ? state.visited.size : state?.visited?.size ?? 0;
+  const frontierCount = state?.frontier instanceof Set ? state.frontier.size : state?.frontier?.size ?? 0;
+  const goalKey = keyOf(grid.goal.x, grid.goal.y);
+  let cost = null;
+  if (state?.distances instanceof Map){
+    cost = state.distances.get(goalKey) ?? null;
+  } else if (state?.distances && typeof state.distances === 'object' && goalKey in state.distances){
+    cost = state.distances[goalKey];
+  }
+  logAlgoRunResult({
+    runId: currentRunContext.id,
+    durationMs,
+    result: state?.reached ? 'success' : 'fail',
+    pathLength,
+    visited: visitedCount,
+    frontier: frontierCount,
+    cost,
+    algorithm: rules.algorithm,
+    allowDiagonal: !!rules.allowDiagonal,
+    useWeights: !!rules.useWeights,
+    trigger: currentRunContext.trigger,
+    gridCols: grid.cols,
+    gridRows: grid.rows,
+  });
+  currentRunContext.logged = true;
+}
+
+function resetRunContext(){
+  currentRunContext = null;
+}
+
 function rebuildSimulation(nextRules = rules){
   rules = nextRules;
   const fps = store.get().sim.fps;
@@ -432,15 +556,23 @@ function rebuildSimulation(nextRules = rules){
   updateSim({ running: false });
   cursor = createCursor();
   draw();
+  resetRunContext();
 }
 
 function updateRules(patch){
-  const next = { ...store.get().rules, ...patch };
+  const current = store.get().rules;
+  const next = { ...current, ...patch };
+  Object.keys(patch).forEach((key) => {
+    if (current[key] !== next[key]){
+      logRuleToggle(key, next[key]);
+    }
+  });
   store.set({ rules: next });
   rebuildSimulation(next);
   if (lastAppliedSuggestion && !rulesMatchPatch(next, lastAppliedSuggestion)){
     lastAppliedSuggestion = null;
   }
+  resetRunContext();
 }
 
 function showNoPathToast(autoShow=false){
@@ -544,6 +676,7 @@ function applyNoPathSuggestion(option){
   }
   updateRules(patch);
   lastAppliedSuggestion = { ...patch };
+  ensureRunStarted('no_path_suggestion');
   player.play();
   updateSim({ running: true });
 }
@@ -567,6 +700,7 @@ function clearNoPathUi(){
   latestNoPathSignature = null;
   displayedNoPathSignature = null;
   dismissedNoPathSignature = null;
+  loggedNoPathSignature = null;
   lastAppliedSuggestion = null;
   hideNoPathToast();
   if (noPathHelpBtn) noPathHelpBtn.disabled = true;
@@ -631,7 +765,7 @@ function loadTutorialStep(index){
   if (!step) return;
   tutorialState.index = index;
   const newGrid = gridFromJson(step.level);
-  resetForNewGrid(newGrid);
+  resetForNewGrid(newGrid, { source: 'tutorial_step' });
   applyRulesConfig(step.rules);
   updateTutorialUi(step);
 }
@@ -657,7 +791,7 @@ function closeTutorialModal(restore = true){
   deactivateFocusTrap(tutorialModal);
   if (restore && tutorialState.saved){
     const restoredGrid = gridFromJson(tutorialState.saved.grid);
-    resetForNewGrid(restoredGrid);
+    resetForNewGrid(restoredGrid, { source: 'tutorial_restore' });
     applyRulesConfig(tutorialState.saved.rules);
   }
   tutorialState = { active: false, index: 0, saved: null };
@@ -734,6 +868,12 @@ function downloadLevelJson(){
     levelJsonInput.value = json;
   }
   setIoMessage('레벨을 저장했어요.');
+  logLevelSaved({
+    cols: grid.cols,
+    rows: grid.rows,
+    size: grid.cols * grid.rows,
+    source: 'download',
+  });
 }
 
 async function copyLevelJson(){
@@ -752,6 +892,12 @@ async function copyLevelJson(){
   if (levelJsonInput && !levelJsonInput.value){
     levelJsonInput.value = json;
   }
+  logLevelSaved({
+    cols: grid.cols,
+    rows: grid.rows,
+    size: grid.cols * grid.rows,
+    source: 'copy',
+  });
 }
 
 function importLevelObject(obj){
@@ -762,7 +908,7 @@ function importLevelObject(obj){
   }
   try {
     const newGrid = gridFromJson(obj);
-    resetForNewGrid(newGrid);
+    resetForNewGrid(newGrid, { source: 'import_json' });
     if (warnings.length){
       setIoMessage('불러왔지만 주의: ' + warnings.join(' / '));
     } else {
@@ -815,6 +961,9 @@ allowDiagonal.addEventListener('change', e => updateRules({ allowDiagonal: e.tar
 useWeights.addEventListener('change', e => updateRules({ useWeights: e.target.checked }));
 
 playBtn.addEventListener('click', ()=>{
+  if (!player.isPlaying()){
+    ensureRunStarted('play_button');
+  }
   player.play();
   updateSim({ running: true });
 });
@@ -823,6 +972,7 @@ pauseBtn.addEventListener('click', ()=>{
   updateSim({ running: false });
 });
 stepBtn.addEventListener('click', ()=>{
+  ensureRunStarted('step_button');
   player.step();
   updateSim({ running: false });
 });
@@ -830,6 +980,7 @@ resetBtn.addEventListener('click', ()=> {
   player.reset();
   updateSim({ running: false });
   cursor = createCursor();
+  resetRunContext();
   draw();
 });
 
@@ -855,7 +1006,7 @@ setCurrentBrush(currentBrush);
 resizeBtn.addEventListener('click', ()=>{
   const cols = +colsInput.value|0;
   const rows = +rowsInput.value|0;
-  resetForNewGrid(new Grid(cols, rows));
+  resetForNewGrid(new Grid(cols, rows), { source: 'resize' });
 });
 
 // 샘플 레벨
@@ -871,8 +1022,8 @@ loadLevelBtn.addEventListener('click', ()=>{
   const id = sampleLevelSel.value;
   const entry = SAMPLE_LEVELS.find(l => l.id===id);
   if (!entry){ stMsg.textContent='샘플을 선택하세요.'; return; }
-  grid = entry.build();
-  resetForNewGrid(grid);
+  const newGrid = entry.build();
+  resetForNewGrid(newGrid, { source: 'sample_level' });
 });
 
 // 랜덤/클리어
@@ -889,7 +1040,9 @@ randomMapBtn.addEventListener('click', ()=>{
   player.reset();
   updateSim({ running: false });
   cursor = createCursor();
+  resetRunContext();
   draw();
+  logLevelLoaded({ cols: grid.cols, rows: grid.rows, source: 'randomize' });
 });
 
 clearMapBtn.addEventListener('click', ()=>{
@@ -903,7 +1056,9 @@ clearMapBtn.addEventListener('click', ()=>{
   player.reset();
   updateSim({ running: false });
   cursor = createCursor();
+  resetRunContext();
   draw();
+  logLevelLoaded({ cols: grid.cols, rows: grid.rows, source: 'clear' });
 });
 
 exportLevelBtn.addEventListener('click', downloadLevelJson);
@@ -987,3 +1142,4 @@ window.addEventListener('resize', ()=> { renderer.resizeToFit(); draw(); });
 window.addEventListener('keydown', handleKeyDown);
 initOnboarding();
 draw();
+logLevelLoaded({ cols: grid.cols, rows: grid.rows, source: 'initial_load' });

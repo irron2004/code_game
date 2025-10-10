@@ -1,0 +1,8 @@
+fastapi
+django
+uvicorn[standard]
+pytest
+pytest-cov
+httpx
+pytest-asyncio
+pytest-mock

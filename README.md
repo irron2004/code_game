@@ -19,6 +19,11 @@
 ## 레벨 저장/불러오기
 좌측 패널의 **레벨 저장/불러오기**에서 JSON을 다운로드하거나 클립보드로 복사할 수 있습니다. JSON 파일을 선택하거나 텍스트 영역에 붙여넣은 뒤 “텍스트 적용”을 누르면 동일한 맵을 복원할 수 있습니다. 스키마는 `docs/LEVEL_AUTHORING.md`를 참고하세요.
 
+## 학습 지원 기능
+- **경로 없음 진단**: 목표에 도달하지 못하면 1초 내 토스트가 표시되며, 대각선 허용·가중치 끄기·A* 전환 중 성공 가능한 규칙을 안내합니다. 성공 옵션은 녹색으로, 이미 적용된 규칙은 “적용됨”으로 강조됩니다.
+- **튜토리얼 3단계**: 직선 길, 가중치 비교, 대각선+A* 순으로 안내 모달을 제공해 3~5분 내 핵심 개념을 익힐 수 있습니다.
+- **온보딩 패널**: 첫 방문 시 Space/N/R/1~6 단축키를 소개하는 패널이 노출되며 “다시 보지 않기” 체크로 숨길 수 있습니다.
+
 ## 키보드 조작법
 - 화살표: 커서 이동
 - 스페이스바: 현재 브러시 적용/해제(동일 브러시가 있으면 빈칸으로 토글)
@@ -32,7 +37,7 @@ Vitest 기반 단위 테스트를 추가했습니다.
 1. `npm install`
 2. `npm test`
 
-Grid와 알고리즘 모듈의 핵심 로직이 검증되며, 테스트 커버리지는 `coverage/` 폴더로 출력됩니다.
+Grid와 알고리즘 모듈의 핵심 로직이 검증되며, 향후 `level_io`, `no_path_advice`, `store` 모듈까지 확장할 예정입니다. 커버리지는 `coverage/` 폴더로 출력됩니다.
 
 ## Railway 배포
 두 가지 옵션을 지원합니다.
@@ -45,3 +50,8 @@ Grid와 알고리즘 모듈의 핵심 로직이 검증되며, 테스트 커버�
    - 배포 후 Service → Networking → Domains에서 포트 8080을 노출하거나 기본 도메인을 생성해야 퍼블릭 링크가 활성화됩니다.
 
 Railway에서 “Start Command not found”, “could not determine how to build”, 또는 `The executable npm could not be found.` 오류가 발생하면 `docs/DEPLOY_TROUBLESHOOTING.md`를 참고하세요.
+
+## 텔레메트리 인제스트
+- 브라우저 측 `telemetry.js`가 `[analytics]` 이벤트를 배치 전송하며, 즉시 이벤트(`algo_run_end`, `no_path_detected`)는 `sendBeacon`으로 보냅니다.
+- 서버는 `/v1/ingest-token`(JWT 발급, TTL 5분)과 `/v1/events`(배치 수신, RateLimit 기본 600 req/min)를 노출하며, `INGEST_SECRET`, `INGEST_ALLOW_ORIGINS`, `DATABASE_URL`, `INGEST_RATE_MAX`, `INGEST_WINDOW_MS` 환경 변수로 제어합니다.
+- Postgres(`events` 테이블) 연결이 설정되지 않으면 이벤트는 202 응답과 함께 드랍되며 콘솔 경고가 출력되므로, 운영 배포 전 `DATABASE_URL`과 초기 스키마를 구성해 주세요.
