@@ -14,7 +14,7 @@ Railway에서 자동 감지(Launchpad/Railpack)로 배포 시 다음 오류가 �
 ### 1) Node 정적 서버 도입(권장)
 - 루트에 `package.json`, `server.js`를 추가하고 `algorithm-game/` 폴더를 Express 정적 서버로 서빙.
 - Railway Start Command를 `npm start`로 설정하거나 값 제거(기본값 사용) 후 재배포.
-- 로컬 검증: `npm install && npm start` → `http://localhost:8080`.
+- 로컬 검증: `npm ci && npm run check && npm start` → `http://localhost:8080`.
 
 ### 2) Docker 배포 유지
 - 이미 포함된 `Dockerfile`을 선택해 배포하거나, Railway에서 Docker 모드를 사용해 빌드.

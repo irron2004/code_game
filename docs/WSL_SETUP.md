@@ -1,30 +1,31 @@
 # WSL 개발 환경 설정 가이드
 
-이 문서는 WSL(Ubuntu) 환경에서 개발 환경을 설정하는 방법을 설명합니다.
+이 문서는 WSL(Ubuntu)에서 실제 제품인 Node 정적 앱을 실행하는 방법을 설명합니다.
+Python 관련 명령은 제품 런타임이 아닌 루트 헬스체크 스텁을 수정할 때만 사용합니다.
 
 ## 🚀 빠른 시작
 
 ### 1. WSL 환경 확인
 ```bash
-# WSL 버전 확인
+# Windows PowerShell에서 배포판 확인
 wsl --list --verbose
 
-# WSL 내부에서 실행
+# 설치된 배포판 시작
 wsl -d Ubuntu-24.04
 ```
 
 ### 2. 프로젝트 위치
-- **WSL 경로**: `/home/<username>/projects/code_game`
-- **Windows 경로**: `C:\Users\<username>\Desktop\my\web_service_new\code_game`
+- 체크아웃 위치는 자유롭게 정하되, 아래 명령은 저장소 루트(`code_game/`)에서 실행합니다.
+- NTFS 마운트보다 WSL 파일시스템의 worktree가 파일 I/O와 패키지 설치에 유리합니다.
 
-### 3. 자동 설정
+### 3. 제품 설치·검증
 ```bash
-# 프로젝트 디렉터리로 이동
-cd ~/projects/code_game
-
-# 자동 설정 스크립트 실행
-./scripts/setup.sh
+npm ci
+npm run check
+npm start
 ```
+
+`npm start`의 기본 주소는 `http://localhost:8080`입니다.
 
 ## 🛠️ 수동 설정
 
@@ -44,7 +45,7 @@ EOF
 wsl --shutdown
 ```
 
-### 2. 필수 패키지 설치
+### 2. Python 스텁용 패키지 설치(선택)
 ```bash
 sudo apt update
 sudo apt install -y build-essential python3-venv python3-pip git openssh-client \
@@ -57,9 +58,9 @@ sudo apt install -y build-essential python3-venv python3-pip git openssh-client 
 python3 -m venv .venv
 source .venv/bin/activate
 
-# 의존성 설치
+# 제품과 무관한 Python 헬스체크 스텁 의존성 설치
 pip install --upgrade pip setuptools wheel
-pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
 
 ### 4. Git 설정
@@ -74,7 +75,7 @@ git config --global user.email "your.email@example.com"
 
 ## 📋 사용 가능한 명령어
 
-### Makefile 명령어
+### Makefile 명령어(Python 스텁)
 ```bash
 make help          # 도움말 보기
 make bootstrap      # 개발 환경 설정
@@ -108,7 +109,7 @@ make ci
 ## 🔧 개발 도구
 
 ### 설치된 도구들
-- **Python**: 3.12.3
+- **Python**: 3.10 이상(스텁 수정 시에만 필요)
 - **pytest**: 테스트 프레임워크
 - **black**: 코드 포맷터
 - **isort**: import 정렬
@@ -117,10 +118,9 @@ make ci
 - **pre-commit**: Git 훅 관리
 
 ### 설정 파일들
-- `pyproject.toml`: Python 프로젝트 설정
+- `pyproject.toml`: Python 의존성·도구 설정의 캐노니컬 소스
 - `.pre-commit-config.yaml`: pre-commit 설정
-- `requirements.in`: 의존성 정의
-- `requirements.txt`: 잠금된 의존성
+- `requirements.in`: `pyproject.toml`의 dev extra를 가리키는 pip-tools 입력
 - `Makefile`: 개발 명령어
 - `docker-compose.yml`: 로컬 서비스
 
@@ -151,7 +151,7 @@ make down
 make test
 
 # 특정 테스트
-pytest tests/test_health.py -v
+.venv/bin/python -m pytest tests/test_health.py -v
 
 # 커버리지 포함
 pytest tests/ --cov=src --cov-report=html
@@ -183,7 +183,7 @@ make pre-commit
 
 ### GitHub Actions 워크플로우
 - **ci-python.yml**: Python 테스트 및 린팅
-- **ci-node.yml**: Node.js/React 테스트
+- **ci-node.yml**: Node.js 정적 앱·Express 서버 검사
 - **docker.yml**: Docker 이미지 빌드 및 푸시
 
 ### 로컬 CI 실행
@@ -206,11 +206,10 @@ chmod 644 ~/.ssh/id_ed25519.pub
 
 #### 2. 가상환경 문제
 ```bash
-# 가상환경 재생성
-rm -rf .venv
+# 기존 가상환경을 지우는 작업은 사용자 승인 후 수행
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
 
 #### 3. Git 인증 문제
@@ -242,9 +241,9 @@ wsl --shutdown
 ## 🤝 기여하기
 
 1. 이슈 생성 또는 기존 이슈 확인
-2. 기능 브랜치 생성: `git checkout -b feature/amazing-feature`
+2. 기능 브랜치 생성: `git switch -c feat/amazing-feature`
 3. 변경사항 커밋: `git commit -m 'Add amazing feature'`
-4. 브랜치 푸시: `git push origin feature/amazing-feature`
+4. 브랜치 푸시: `git push origin feat/amazing-feature`
 5. Pull Request 생성
 
 ## 📝 라이선스

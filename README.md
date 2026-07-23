@@ -10,10 +10,11 @@
 - `server.js` — Express 기반 정적 서버 (Railway/로컬 `npm start` 경로)
 - `docker/`, `Dockerfile` — Railway 등 컨테이너 환경 배포용 Nginx 구성
 - `AGENTS.md` — 기여자를 위한 한 페이지 요약 가이드
+- `src/`, `tests/`, `pyproject.toml` — 제품에서 사용하지 않는 Python 헬스체크 스텁(정리 여부는 소유자 결정)
 
 ## 로컬 실행
 - 빠른 미리보기: `cd algorithm-game && python3 -m http.server 5173` → `http://localhost:5173`
-- Node 기반 정적 서버: `npm install && npm start` → 기본 포트 `http://localhost:8080`
+- Node 기반 정적 서버: `npm ci && npm start` → 기본 포트 `http://localhost:8080`
 - Docker 이미지: `docker build -t code-game . && docker run --rm -p 8080:8080 -e PORT=8080 code-game`
 
 ## 레벨 저장/불러오기
@@ -33,11 +34,19 @@
 - `1`~`6`: 브러시 선택(벽, 빈칸, 시작, 목표, 숲, 모래)
 
 ## 테스트
-Vitest 기반 단위 테스트를 추가했습니다.
-1. `npm install`
-2. `npm test`
+제품 게이트는 Node 20.19+ 또는 Node 22.12+에서 실행합니다.
 
-Grid와 알고리즘 모듈의 핵심 로직이 검증되며, 향후 `level_io`, `no_path_advice`, `store` 모듈까지 확장할 예정입니다. 커버리지는 `coverage/` 폴더로 출력됩니다.
+```bash
+npm ci
+npm run check
+```
+
+`npm run check`는 `server.js` 구문과 `algorithm-game/src/__tests__/`의 Vitest 18건을
+검증합니다. 감시 모드는 `npm run test:watch`를 사용합니다. 정적 앱이므로 별도 빌드
+단계는 없으며, 커버리지는 기본 게이트에서 생성하지 않습니다.
+
+Python 스텁을 수정한 경우에만 `.venv/bin/pip install -e ".[dev]" && make check`도
+실행합니다. 이 스텁은 현재 Express 서버나 브라우저 앱의 런타임 경로가 아닙니다.
 
 ## Railway 배포
 두 가지 옵션을 지원합니다.

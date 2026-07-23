@@ -45,4 +45,4 @@
 | tutorial-2 | 숲/모래 가중치 | Dijkstra / 가중치 ON | BFS vs Dijkstra 비교 토글 |
 | tutorial-3 | 대각선 + A* | A* / 대각선 ON / 가중치 OFF | 사선 장애물 우회, 휴리스틱 체감 |
 
-각 튜토리얼 JSON은 `src/tutorial.js`에서 확인할 수 있으며, 작성 시 위 표를 참고해 동일한 규칙/교훈을 갖도록 설계합니다.
+각 튜토리얼 JSON은 `algorithm-game/src/tutorial.js`에서 확인할 수 있으며, 작성 시 위 표를 참고해 동일한 규칙/교훈을 갖도록 설계합니다.

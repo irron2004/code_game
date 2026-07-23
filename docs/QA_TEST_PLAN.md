@@ -2,7 +2,8 @@
 # QA/테스트 계획
 
 ## 1. 전략
-- 단위 테스트: `grid.js`, `algorithms.js`
+- 자동 게이트: `npm ci && npm run check`
+- 단위 테스트: `algorithm-game/src/__tests__/`의 grid/algorithms/level IO/진단/store/telemetry
 - 수동 시나리오: UI/드래그/반응형/접근성
 - 교차 브라우저: Chrome/Edge/Safari 최신 2버전
 

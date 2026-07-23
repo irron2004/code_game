@@ -28,7 +28,7 @@ source .venv/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 
 echo "📋 Installing Python dependencies..."
-pip install -r requirements.txt
+pip install -e ".[dev]"
 
 echo "🔧 Setting up pre-commit hooks..."
 pre-commit install
