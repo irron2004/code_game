@@ -51,7 +51,7 @@ npm test         # vitest --run (algorithm-game/src/__tests__/**/*.spec.js)
 ## 5) CI/배포
 
 - `ci-node.yml`이 유일하게 제품과 관련된 CI다. `algorithm-game/**`, `package.json`, `package-lock.json`, `vitest.config.js` 변경 시에만 트리거되며 `npm ci` → `npm test -- --run`을 실행한다. `server.js`/`docs/`/Docker 관련 변경은 이 CI를 트리거하지 않는다.
-- `ci-python.yml`, `docker.yml`은 모든 push/PR에서 돌지만 각각 §2의 Python 스텁, Docker 이미지 빌드만 검증한다.
+- `ci-python.yml`은 `main`/`develop` 브랜치로의 push·PR에서, `docker.yml`은 `main` 브랜치 push(+`v*` 태그)와 `main` 대상 PR에서 돈다 — 둘 다 path 필터가 없어 어떤 파일이 바뀌어도 트리거되지만, 각각 §2의 Python 스텁, Docker 이미지 빌드만 검증한다.
 - Railway 배포는 Node(`npm start`, 권장) 또는 Docker 두 경로를 지원한다. Start Command 설정 실수로 인한 오류는 `docs/DEPLOY_TROUBLESHOOTING.md`에 정리돼 있다.
 - 텔레메트리 API(`/v1/events`, `/v1/ingest-token`)는 `INGEST_SECRET`, `INGEST_ALLOW_ORIGINS`, `DATABASE_URL`, `INGEST_RATE_MAX`, `INGEST_WINDOW_MS` 환경 변수로 제어한다. `DATABASE_URL` 미설정 시 이벤트는 202로 수락되지만 저장되지 않는다(`server.js`).
 
@@ -59,7 +59,7 @@ npm test         # vitest --run (algorithm-game/src/__tests__/**/*.spec.js)
 
 `docs/`에 제품 문서가 이미 있다 — 새로 만들기 전에 먼저 확인한다: `PRD.md`(제품 요구), `SRS.md`/`ARCHITECTURE.md`(설계), `UX_GUIDE.md`, `LEVEL_AUTHORING.md`(레벨 JSON 스키마), `TELEMETRY_SETUP.md`/`SECURITY_PRIVACY.md`/`ANALYTICS_METRICS.md`(계측), `QA_TEST_PLAN.md`, `DEPLOY_TROUBLESHOOTING.md`, `WSL_SETUP.md`.
 
-루트의 `AGENT.md`와 `docs/AGENT.md`는 이 파일 이전에 작성된 구버전 초안(내용 대부분 본 문서에 반영됨)이다 — 규칙은 본 `AGENTS.md`를 따른다.
+구버전 초안 `AGENT.md`(루트)와 `docs/AGENT.md`는 제거됨(git 이력 참조) — 규칙은 본 `AGENTS.md`를 따른다.
 
 ## 7) 커밋/브랜치
 
