@@ -3,7 +3,7 @@
 
 이 폴더는 Algorithm Learning Game 프로젝트의 문서 모음입니다.
 
-- `AGENT.md` — 에이전트/개발자 지시서(원칙/스프린트/DoD)
+- 에이전트/개발자 작업 규칙 — 레포 루트 `AGENTS.md` 참조
 - `PRD.md` — 제품 요구사항(배경/목표/범위)
 - `SRS.md` — 소프트웨어 요구사양(기능/비기능/데이터)
 - `SCOPE_PLAN.md` — 범위/일정/마일스톤/WBS
