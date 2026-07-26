@@ -4,11 +4,17 @@
 
 상태: `active` · 갱신: `2026-07-26` · 진실: [`next.yml`](next.yml)
 
-**지금 집중:** 정적 게임의 파일럿 전 수동·성능·접근성 QA
+**지금 집중:** 아동용 게임의 입력·개인정보 계약을 바로잡고 파일럿 QA 완결
 
 ## 할 일
 
+<a id="task-code_game-keyboard-contract-fix"></a>
+- [ ] `keyboard-contract-fix` · **P0 · todo** — 온보딩과 실제 Space·Enter·P 키 동작을 하나의 아동용 play/pause 계약으로 일치시킨다 — index.html·UX_GUIDE와 main.js·README 사이의 키보드 안내 불일치
 <a id="task-code_game-manual-release-qa"></a>
 - [ ] `manual-release-qa` · **P0 · todo** — 브러시·시뮬·실패 토스트·JSON I/O·튜토리얼·온보딩·키보드 시나리오를 수동 검증해 결과를 남긴다 — docs/QA_TEST_PLAN.md T-UI-01부터 T-A11Y-08까지의 수동 시나리오
+<a id="task-code_game-privacy-telemetry-decision"></a>
+- [ ] `privacy-telemetry-decision` · **P0 · todo** — 기본 telemetry·device ID 전송을 아동 개인정보 무추적 정책에 맞게 제거하거나 명시적 opt-in으로 바꾼다 — AGENTS.md 무추적 정책과 현재 telemetry 기본 활성 동작의 충돌
 <a id="task-code_game-performance-browser-baseline"></a>
 - [ ] `performance-browser-baseline` · **P1 · todo** — 40×25 벽 30% 맵의 성능과 Chrome·Edge·Safari 최신 2버전 동작을 기준선으로 기록한다 — docs/QA_TEST_PLAN.md 성능·교차 브라우저 기준
+<a id="task-code_game-teacher-pilot"></a>
+- [ ] `teacher-pilot` · **P1 · blocked · blocked by manual-release-qa** — 교사 3명 파일럿을 수행하고 관찰·피드백·출시 판단을 추적 가능한 결과로 남긴다 — docs/PRD.md 출시 기준

@@ -1,8 +1,20 @@
 project: code_game
 status: active
-focus: 정적 게임의 파일럿 전 수동·성능·접근성 QA
+focus: 아동용 게임의 입력·개인정보 계약을 바로잡고 파일럿 QA 완결
 updated: "2026-07-26"
 tasks:
+  - id: keyboard-contract-fix
+    title: 온보딩과 실제 Space·Enter·P 키 동작을 하나의 아동용 play/pause 계약으로 일치시킨다
+    priority: P0
+    status: todo
+    source: agent:codex
+    note: index.html·UX_GUIDE와 main.js·README 사이의 키보드 안내 불일치
+  - id: privacy-telemetry-decision
+    title: 기본 telemetry·device ID 전송을 아동 개인정보 무추적 정책에 맞게 제거하거나 명시적 opt-in으로 바꾼다
+    priority: P0
+    status: todo
+    source: agent:codex
+    note: AGENTS.md 무추적 정책과 현재 telemetry 기본 활성 동작의 충돌
   - id: manual-release-qa
     title: 브러시·시뮬·실패 토스트·JSON I/O·튜토리얼·온보딩·키보드 시나리오를 수동 검증해 결과를 남긴다
     priority: P0
@@ -15,3 +27,10 @@ tasks:
     status: todo
     source: seed:2026-07-26-audit
     note: docs/QA_TEST_PLAN.md 성능·교차 브라우저 기준
+  - id: teacher-pilot
+    title: 교사 3명 파일럿을 수행하고 관찰·피드백·출시 판단을 추적 가능한 결과로 남긴다
+    priority: P1
+    status: blocked
+    source: agent:codex
+    note: docs/PRD.md 출시 기준
+    blocked_by: manual-release-qa
