@@ -1,7 +1,7 @@
 project: code_game
 status: active
 focus: 아동용 게임의 입력·개인정보 계약을 바로잡고 파일럿 QA 완결
-updated: "2026-07-26"
+updated: "2026-07-31"
 tasks:
   - id: keyboard-contract-fix
     title: 온보딩과 실제 Space·Enter·P 키 동작을 하나의 아동용 play/pause 계약으로 일치시킨다
@@ -34,3 +34,9 @@ tasks:
     source: agent:codex
     note: docs/PRD.md 출시 기준
     blocked_by: manual-release-qa
+  - id: workspace-generated-lf-policy
+    title: next·asset 원본과 생성물의 Git EOL을 저장소 소유 LF로 고정한다
+    priority: P1
+    status: done
+    source: agent:codex
+    note: .gitattributes가 next.yml·NEXT.md와 future assets.yml·ASSETS.md를 exact-path LF로 선언
